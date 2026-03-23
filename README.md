@@ -75,3 +75,5 @@ Constructor takes `LedgerGeneric` class via dependency injection — no direct i
 **`metadata-hash` is required.** The Polkadot Generic Ledger app uses RFC-78 merkleized metadata for clear signing. The node must be compiled with `--features metadata-hash` so the runtime embeds the metadata hash for on-chain verification. Mainnet and testnet already have this. Local/custom nodes without it will reject transactions with `UnknownTransaction::CannotLookup`.
 
 **Token symbol is hardcoded to `TAO`.** Subtensor's `build.rs` uses `enable_metadata_hash("TAO", 9)` regardless of the network. Some networks (e.g. testnet) report `testTAO` in chain properties, but the WASM hash is always computed with `TAO`. The tool matches this to avoid signature mismatches.
+
+<img width="871" height="1177" alt="image" src="https://github.com/user-attachments/assets/84573cee-bcb0-40d2-9b61-79efe31f0d3f" />
