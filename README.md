@@ -1,4 +1,4 @@
-# Ledger Tool — Bittensor
+# Ledger Manager — Bittensor
 
 Standalone browser page for testing Ledger hardware wallet signing with Bittensor (Substrate) nodes.
 
