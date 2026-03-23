@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.idea/
+.pytest_cache/
+.DS_Store
+*.log

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ledger Tool — Bittensor</title>
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+
+<!-- 1. Network -->
+<section>
+  <h2>1. Network</h2>
+  <div class="row">
+    <div>
+      <label>Preset</label>
+      <select id="networkPreset">
+        <option value="wss://lite.sub.latent.to:443">Latent</option>
+        <option value="wss://entrypoint-finney.opentensor.ai:443">Finney</option>
+        <option value="wss://test.finney.opentensor.ai:443">Testnet</option>
+        <option value="custom" selected>Custom URL</option>
+      </select>
+    </div>
+    <div id="customUrlWrap">
+      <label>Custom RPC URL</label>
+      <input id="customUrl" value="ws://127.0.0.1:9944" />
+    </div>
+    <button class="btn-primary" id="connectBtn">Connect</button>
+    <button class="btn-secondary" id="disconnectBtn" disabled>Disconnect</button>
+  </div>
+  <div class="status-box status-neutral mt-12" id="networkStatus">Disconnected</div>
+</section>
+
+<!-- 2. Ledger Devices -->
+<section>
+  <h2>2. Ledger</h2>
+  <div class="row">
+    <button class="btn-primary" id="addDeviceBtn">+ Add Device</button>
+    <button class="btn-primary" id="loadAccountsBtn" disabled>Load 5 Accounts</button>
+    <div class="index-input-wrap">
+      <input id="singleAccountIndex" class="index-input" type="number" min="0" step="1" value="0" placeholder="#" />
+    </div>
+    <button class="btn-secondary" id="loadSingleAccountBtn" disabled>Load by Index</button>
+  </div>
+  <table class="mt-12">
+    <thead><tr><th>Device</th><th></th></tr></thead>
+    <tbody id="deviceListBody">
+      <tr><td colspan="2" class="text-muted">No authorized devices</td></tr>
+    </tbody>
+  </table>
+  <div class="status-box status-neutral mt-12" id="ledgerStatus">No device selected</div>
+</section>
+
+<!-- 3. Accounts -->
+<section>
+  <h2>3. Accounts</h2>
+  <div class="refresh-bar">
+    <button class="btn-secondary btn-sm" id="refreshBalancesBtn" disabled>Refresh Balances</button>
+  </div>
+  <table>
+    <thead>
+      <tr><th>#</th><th>Address</th><th>Derivation Path</th><th>Balance (TAO)</th></tr>
+    </thead>
+    <tbody id="accountsBody">
+      <tr><td colspan="4" class="text-muted">No accounts loaded</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 4. Transfer -->
+<section>
+  <h2>4. Transfer</h2>
+  <div>
+    <label>From (click account above)</label>
+    <input id="fromAddress" readonly placeholder="Select an account from the list above" />
+  </div>
+  <div class="mt-8">
+    <label>To</label>
+    <input id="toAddress" placeholder="5..." />
+  </div>
+  <div class="row mt-8">
+    <div>
+      <label>Amount (TAO)</label>
+      <input id="amount" type="number" step="0.1" min="0" placeholder="0.1" />
+    </div>
+    <button class="btn-primary" id="sendBtn" disabled>Send</button>
+  </div>
+  <p class="hint">
+    Ledger Generic app requires <code>metadata-hash</code> feature enabled
+    at node compile time. Mainnet and testnet have it. For custom/local nodes: rebuild with
+    <code>--features metadata-hash</code>, otherwise transactions will
+    be rejected with <code>CannotLookup</code>.
+  </p>
+</section>
+
+<!-- 5. Logging -->
+<section>
+  <h2>5. Logging</h2>
+  <pre class="result-block log-panel" id="logPanel"></pre>
+</section>
+
+<!-- 6. Operation Status + Result -->
+<section>
+  <h2>6. Operation Status</h2>
+  <div class="status-box status-neutral" id="txStatus">Idle</div>
+  <div class="mt-12 hidden" id="txResultWrap">
+    <label>Result</label>
+    <div class="result-block" id="txResult"></div>
+  </div>
+</section>
+
+<script type="module" src="./app.js"></script>
+
+</body>
+</html>
