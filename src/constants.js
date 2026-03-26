@@ -1,0 +1,22 @@
+export const SS58_PREFIX = 42;
+export const SLIP44 = 0x00000162;
+export const CHAIN = 'bittensor';
+export const RAO_PER_TAO = 1_000_000_000n;
+
+// build.rs hardcodes enable_metadata_hash("TAO", 9). Merkle params must match WASM, not chain properties.
+export const MERKLE_DECIMALS = 9;
+export const MERKLE_TOKEN = 'TAO';
+
+export const ICON_COPY = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
+export const ICON_CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
+export const COPY_FEEDBACK_MS = 1500;
+
+/** Single source of truth for RPC presets (label + url; url === 'custom' for custom input). */
+export const NETWORK_PRESETS = [
+  { label: 'Latent', url: 'wss://lite.sub.latent.to:443' },
+  { label: 'Latent (Archive)', url: 'wss://archive.sub.latent.to' },
+  { label: 'Finney', url: 'wss://entrypoint-finney.opentensor.ai:443' },
+  { label: 'Archive (Legacy)', url: 'wss://archive.chain.opentensor.ai:443' },
+  { label: 'Testnet', url: 'wss://test.finney.opentensor.ai:443' },
+  { label: 'Custom URL', url: 'custom' },
+];

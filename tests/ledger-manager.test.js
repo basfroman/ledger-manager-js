@@ -4,7 +4,7 @@ import {
   raceWithAbort,
   classifyLedgerError,
   LEDGER_ERROR,
-} from './ledger-manager.js';
+} from '../src/ledger-manager.js';
 
 function createHidDevice(overrides = {}) {
   return {

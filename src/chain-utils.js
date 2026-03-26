@@ -12,12 +12,8 @@ export function txExplorerUrl(txHash, genesisHash, rpcEndpoint, blockHash) {
   return null;
 }
 
-// build.rs hardcodes enable_metadata_hash("TAO", 9) for ALL Bittensor networks.
-// Chain properties may differ (e.g. testnet reports "testTAO"), but the hash
-// embedded in the WASM always uses "TAO"/9. We must match that.
-// These are semantically different from TAO_DECIMALS/TOKEN_SYMBOL (chain-property fallbacks).
-export const MERKLE_DECIMALS = 9;
-export const MERKLE_TOKEN = 'TAO';
+// Re-export merkle params (single source of truth in constants.js).
+export { MERKLE_DECIMALS, MERKLE_TOKEN } from './constants.js';
 
 export function truncAddr(addr) {
   if (!addr || addr.length < 16) return addr;

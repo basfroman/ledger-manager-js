@@ -21,13 +21,15 @@ Opens at `http://localhost:5173`. Chrome/Edge required (WebHID support).
 
 ## Project structure
 
-| File | Purpose |
+| Path | Purpose |
 |---|---|
-| `index.html` | UI layout |
-| `styles.css` | Styles |
-| `app.js` | Application logic — network connection, account loading, transaction building, signing |
-| `ledger-manager.js` | Reusable Ledger device manager — status polling, device lifecycle, signing, error classification |
-| `vite.config.js` | Vite config (`global` polyfill for Node.js `Buffer`) |
+| `index.html` | UI shell (Vite entry) |
+| `src/main.js` | App bootstrap and module wiring |
+| `src/styles.css` | Styles |
+| `src/*.js` | Feature modules (`network`, `accounts`, `tx`, `ui`, `chain-utils`, `deps`, …) |
+| `src/ledger-manager.js` | Reusable Ledger device manager (no DOM) |
+| `tests/` | Vitest suites (`*.test.js`) and `tests/helpers/` for DOM fixtures |
+| `vite.config.js` | Vite + Vitest config |
 
 ## `LedgerManager`
 

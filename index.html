@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="./styles.css" />
+<link rel="stylesheet" href="/src/styles.css" />
 </head>
 <body>
 
@@ -22,31 +22,7 @@
             <span class="custom-select-label">Latent</span>
             <span class="custom-select-url">wss://lite.sub.latent.to:443</span>
           </button>
-          <div class="custom-select-dropdown hidden" id="networkPresetDropdown">
-            <div class="custom-select-option selected" data-value="wss://lite.sub.latent.to:443">
-              <span class="custom-select-label">Latent</span>
-              <span class="custom-select-url">wss://lite.sub.latent.to:443</span>
-            </div>
-            <div class="custom-select-option" data-value="wss://archive.sub.latent.to">
-              <span class="custom-select-label">Latent (Archive)</span>
-              <span class="custom-select-url">wss://archive.sub.latent.to</span>
-            </div>
-            <div class="custom-select-option" data-value="wss://entrypoint-finney.opentensor.ai:443">
-              <span class="custom-select-label">Finney</span>
-              <span class="custom-select-url">wss://entrypoint-finney.opentensor.ai:443</span>
-            </div>
-            <div class="custom-select-option" data-value="wss://archive.chain.opentensor.ai:443">
-              <span class="custom-select-label">Archive (Legacy)</span>
-              <span class="custom-select-url">wss://archive.chain.opentensor.ai:443</span>
-            </div>
-            <div class="custom-select-option" data-value="wss://test.finney.opentensor.ai:443">
-              <span class="custom-select-label">Testnet</span>
-              <span class="custom-select-url">wss://test.finney.opentensor.ai:443</span>
-            </div>
-            <div class="custom-select-option" data-value="custom">
-              <span class="custom-select-label">Custom URL</span>
-            </div>
-          </div>
+          <div class="custom-select-dropdown hidden" id="networkPresetDropdown"></div>
         </div>
       </div>
       <div id="customUrlWrap" class="hidden">
@@ -193,7 +169,7 @@
   </section>
 </div>
 
-<script type="module" src="./app.js"></script>
+<script type="module" src="/src/main.js"></script>
 
 </body>
 </html>

@@ -6,7 +6,7 @@ import {
   getArgTypeName, parseExtrinsicArgs,
   formatDocs, txExplorerUrl,
   TAO_DECIMALS, TOKEN_SYMBOL, FINNEY_GENESIS_HASH,
-} from './chain-utils.js';
+} from '../src/chain-utils.js';
 
 function mockApi(overrides = {}) {
   return {
