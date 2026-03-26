@@ -10,6 +10,7 @@
 const DEFAULT_VENDOR_ID = 0x2c97;
 const DEFAULT_POLL_MS = 3000;
 const DEFAULT_SS58_PREFIX = 42;
+const DEFAULT_PROBE_WAIT_TIMEOUT_MS = 15000;
 
 export const LEDGER_STATUS = Object.freeze({
   IDLE: 'idle',
@@ -39,7 +40,7 @@ export function classifyLedgerError(err) {
   if (statusCode !== null && statusCode >= 0x6d00 && statusCode <= 0x6e01) return LEDGER_ERROR.APP_NOT_OPEN;
   if (statusCode === 0x6985) return LEDGER_ERROR.USER_REJECTED;
   if (statusCode === 0x6982) return LEDGER_ERROR.LOCKED;
-  if (statusCode === 0x6974) return LEDGER_ERROR.METADATA_MISMATCH;
+  if (statusCode === 0x6984) return LEDGER_ERROR.METADATA_MISMATCH;
 
   if (msg.includes('device is already open')) return LEDGER_ERROR.DEVICE_ALREADY_OPEN;
   if (msg.includes('is locked') || msg.includes('device locked') || msg === 'locked') return LEDGER_ERROR.LOCKED;
@@ -93,6 +94,22 @@ function formatVersion(version) {
 
 function toDerivationPath(slip44, accountIndex, addressOffset) {
   return `m/44'/${slip44}'/${accountIndex}'/0'/${addressOffset}'`;
+}
+
+export function raceWithAbort(promise, signal) {
+  if (!signal) return promise;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      if (signal.aborted) {
+        reject(new DOMException('Operation was aborted', 'AbortError'));
+        return;
+      }
+      signal.addEventListener('abort', () => {
+        reject(new DOMException('Operation was aborted', 'AbortError'));
+      }, { once: true });
+    }),
+  ]);
 }
 
 // options:
@@ -171,6 +188,7 @@ export class LedgerManager {
     this._destroyed = true;
     this._exclusive = false;
     this._paused = false;
+    this._probing = false;
     this._devices = [];
     this._selectedDeviceKey = null;
     this._lastEmittedSnapshot = null;
@@ -237,29 +255,17 @@ export class LedgerManager {
     // _probe() and withExclusiveAccess both create LedgerGeneric instances
     // that open the same underlying HIDDevice. If a probe is in flight,
     // we must wait for it to close the device before opening a new session.
-    await this._waitForProbe();
-
+    let fnPromise;
     try {
+      await raceWithAbort(this._waitForProbe(), effectiveSignal);
+
       const ledger = new this._LedgerGeneric(dev.transport, this._chain, this._slip44);
-      const fnPromise = fn(ledger);
+      fnPromise = fn(ledger);
 
-      if (!effectiveSignal) return await fnPromise;
-
-      const abortPromise = new Promise((_, reject) => {
-        effectiveSignal.addEventListener('abort', () => {
-          reject(new DOMException('Operation was aborted', 'AbortError'));
-        }, { once: true });
-      });
-
-      try {
-        return await Promise.race([fnPromise, abortPromise]);
-      } catch (err) {
-        // If abort won the race, the fnPromise is still pending.
-        // _closeDevice in finally will force it to reject — suppress
-        // that orphaned rejection to avoid unhandled promise warnings.
-        fnPromise.catch(() => {});
-        throw err;
-      }
+      return await raceWithAbort(fnPromise, effectiveSignal);
+    } catch (err) {
+      fnPromise?.catch(() => {});
+      throw err;
     } finally {
       this._exclusive = false;
       await this._closeDevice(dev);
@@ -453,14 +459,24 @@ export class LedgerManager {
     }
   }
 
-  // Polls for in-flight probe completion. _probe() always terminates
-  // (getVersion has firmware-level timeout), so this never hangs.
+  // Waits for an in-flight probe to release the HID device.
+  // Rejects after DEFAULT_PROBE_WAIT_TIMEOUT_MS to prevent
+  // indefinite hangs if the transport becomes unresponsive.
   async _waitForProbe() {
     if (!this._probing) return;
     this._log('waiting for in-flight probe to finish');
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
+      const start = Date.now();
       const interval = setInterval(() => {
-        if (!this._probing) { clearInterval(interval); resolve(); }
+        if (!this._probing) {
+          clearInterval(interval);
+          resolve();
+        } else if (Date.now() - start > DEFAULT_PROBE_WAIT_TIMEOUT_MS) {
+          clearInterval(interval);
+          this._probing = false;
+          this._log('_waitForProbe timed out, forcing reset');
+          reject(new Error('Timed out waiting for device probe to complete. Please retry.'));
+        }
       }, 10);
     });
   }
@@ -518,9 +534,7 @@ export class LedgerManager {
       }
     } finally {
       await this._closeDevice(dev);
-      if (gen === this._probeGen) {
-        this._probing = false;
-      }
+      this._probing = false;
     }
   }
 
