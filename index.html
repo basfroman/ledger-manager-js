@@ -3,111 +3,195 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Ledger Tool — Bittensor</title>
+<title>Ledger Manager — Bittensor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
 
-<!-- 1. Network -->
-<section>
-  <h2>1. Network</h2>
-  <div class="row">
-    <div>
-      <label>Preset</label>
-      <select id="networkPreset">
-        <option value="wss://lite.sub.latent.to:443">Latent</option>
-        <option value="wss://entrypoint-finney.opentensor.ai:443">Finney</option>
-        <option value="wss://test.finney.opentensor.ai:443">Testnet</option>
-        <option value="custom" selected>Custom URL</option>
-      </select>
+<!-- Row 1: Network + Ledger -->
+<div class="top-row" id="topRow">
+  <section id="networkSection">
+    <h2>Network</h2>
+    <div class="network-fields">
+      <div>
+        <div class="custom-select" id="networkPresetWrap">
+          <button class="custom-select-trigger" id="networkPresetTrigger" type="button">
+            <span class="custom-select-label">Latent</span>
+            <span class="custom-select-url">wss://lite.sub.latent.to:443</span>
+          </button>
+          <div class="custom-select-dropdown hidden" id="networkPresetDropdown">
+            <div class="custom-select-option selected" data-value="wss://lite.sub.latent.to:443">
+              <span class="custom-select-label">Latent</span>
+              <span class="custom-select-url">wss://lite.sub.latent.to:443</span>
+            </div>
+            <div class="custom-select-option" data-value="wss://archive.sub.latent.to">
+              <span class="custom-select-label">Latent (Archive)</span>
+              <span class="custom-select-url">wss://archive.sub.latent.to</span>
+            </div>
+            <div class="custom-select-option" data-value="wss://entrypoint-finney.opentensor.ai:443">
+              <span class="custom-select-label">Finney</span>
+              <span class="custom-select-url">wss://entrypoint-finney.opentensor.ai:443</span>
+            </div>
+            <div class="custom-select-option" data-value="wss://archive.chain.opentensor.ai:443">
+              <span class="custom-select-label">Archive (Legacy)</span>
+              <span class="custom-select-url">wss://archive.chain.opentensor.ai:443</span>
+            </div>
+            <div class="custom-select-option" data-value="wss://test.finney.opentensor.ai:443">
+              <span class="custom-select-label">Testnet</span>
+              <span class="custom-select-url">wss://test.finney.opentensor.ai:443</span>
+            </div>
+            <div class="custom-select-option" data-value="custom">
+              <span class="custom-select-label">Custom URL</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="customUrlWrap" class="hidden">
+        <label>Custom RPC URL</label>
+        <input id="customUrl" value="ws://127.0.0.1:9944" />
+      </div>
+      <div class="network-buttons">
+        <button class="btn-primary" id="connectBtn">Connect</button>
+        <button class="btn-secondary" id="disconnectBtn" disabled>Disconnect</button>
+      </div>
     </div>
-    <div id="customUrlWrap">
-      <label>Custom RPC URL</label>
-      <input id="customUrl" value="ws://127.0.0.1:9944" />
+    <div class="status-box status-neutral mt-12" id="networkStatus">Disconnected</div>
+  </section>
+
+  <section id="ledgerSection">
+    <h2>Ledger</h2>
+    <div class="ledger-actions">
+      <button class="btn-primary" id="addDeviceBtn">+ Add Device</button>
+      <button class="btn-primary" id="loadAccountsBtn" disabled>Load 5 Accounts</button>
+      <div class="index-input-wrap">
+        <input id="singleAccountIndex" class="index-input" type="number" min="0" step="1" value="0" placeholder="#" />
+      </div>
+      <button class="btn-secondary" id="loadSingleAccountBtn" disabled>Load by Index</button>
     </div>
-    <button class="btn-primary" id="connectBtn">Connect</button>
-    <button class="btn-secondary" id="disconnectBtn" disabled>Disconnect</button>
-  </div>
-  <div class="status-box status-neutral mt-12" id="networkStatus">Disconnected</div>
-</section>
+    <table class="mt-12">
+      <thead><tr><th>Device</th><th></th></tr></thead>
+      <tbody id="deviceListBody">
+        <tr><td colspan="2" class="text-muted">No authorized devices</td></tr>
+      </tbody>
+    </table>
+    <div class="status-box status-neutral mt-12" id="ledgerStatus">No device selected</div>
+  </section>
+</div>
 
-<!-- 2. Ledger Devices -->
-<section>
-  <h2>2. Ledger</h2>
-  <div class="row">
-    <button class="btn-primary" id="addDeviceBtn">+ Add Device</button>
-    <button class="btn-primary" id="loadAccountsBtn" disabled>Load 5 Accounts</button>
-    <div class="index-input-wrap">
-      <input id="singleAccountIndex" class="index-input" type="number" min="0" step="1" value="0" placeholder="#" />
+<!-- Row 2: Accounts + Extrinsic -->
+<div class="mid-row">
+  <section>
+    <h2 id="accountsTitle">Accounts</h2>
+    <div class="refresh-bar">
+      <button class="btn-secondary btn-sm" id="refreshBalancesBtn" disabled>Refresh Balances</button>
     </div>
-    <button class="btn-secondary" id="loadSingleAccountBtn" disabled>Load by Index</button>
-  </div>
-  <table class="mt-12">
-    <thead><tr><th>Device</th><th></th></tr></thead>
-    <tbody id="deviceListBody">
-      <tr><td colspan="2" class="text-muted">No authorized devices</td></tr>
-    </tbody>
-  </table>
-  <div class="status-box status-neutral mt-12" id="ledgerStatus">No device selected</div>
-</section>
-
-<!-- 3. Accounts -->
-<section>
-  <h2>3. Accounts</h2>
-  <div class="refresh-bar">
-    <button class="btn-secondary btn-sm" id="refreshBalancesBtn" disabled>Refresh Balances</button>
-  </div>
-  <table>
-    <thead>
-      <tr><th>#</th><th>Address</th><th>Derivation Path</th><th>Balance (TAO)</th></tr>
-    </thead>
-    <tbody id="accountsBody">
-      <tr><td colspan="4" class="text-muted">No accounts loaded</td></tr>
-    </tbody>
-  </table>
-</section>
-
-<!-- 4. Transfer -->
-<section>
-  <h2>4. Transfer</h2>
-  <div>
-    <label>From (click account above)</label>
-    <input id="fromAddress" readonly placeholder="Select an account from the list above" />
-  </div>
-  <div class="mt-8">
-    <label>To</label>
-    <input id="toAddress" placeholder="5..." />
-  </div>
-  <div class="row mt-8">
-    <div>
-      <label>Amount (TAO)</label>
-      <input id="amount" type="number" step="0.1" min="0" placeholder="0.1" />
+    <div class="accounts-scroll">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Address</th><th>Derivation Path</th><th>Balance (TAO)</th><th></th></tr>
+        </thead>
+        <tbody id="accountsBody">
+          <tr><td colspan="5" class="text-muted">No accounts loaded</td></tr>
+        </tbody>
+      </table>
     </div>
-    <button class="btn-primary" id="sendBtn" disabled>Send</button>
-  </div>
-  <p class="hint">
-    Ledger Generic app requires <code>metadata-hash</code> feature enabled
-    at node compile time. Mainnet and testnet have it. For custom/local nodes: rebuild with
-    <code>--features metadata-hash</code>, otherwise transactions will
-    be rejected with <code>CannotLookup</code>.
-  </p>
-</section>
+  </section>
 
-<!-- 5. Logging -->
-<section>
-  <h2>5. Logging</h2>
-  <pre class="result-block log-panel" id="logPanel"></pre>
-</section>
+  <section id="txSection">
+    <div class="section-header">
+      <h2>Extrinsic</h2>
+      <div class="seg-control" id="txModeToggle">
+        <button class="active" data-mode="transfer">Transfer</button>
+        <button data-mode="builder">Builder</button>
+      </div>
+    </div>
 
-<!-- 6. Operation Status + Result -->
-<section>
-  <h2>6. Operation Status</h2>
-  <div class="status-box status-neutral" id="txStatus">Idle</div>
-  <div class="mt-12 hidden" id="txResultWrap">
-    <label>Result</label>
-    <div class="result-block" id="txResult"></div>
-  </div>
-</section>
+    <div id="transferPane">
+      <div>
+        <label>From (click account above)</label>
+        <input id="fromAddress" readonly placeholder="Select an account from the list above" />
+      </div>
+      <div class="mt-8">
+        <label>To</label>
+        <input id="toAddress" placeholder="5..." />
+      </div>
+      <div class="row mt-8">
+        <div>
+          <label>Amount (TAO)</label>
+          <input id="amount" type="number" step="0.1" min="0" placeholder="0.1" />
+        </div>
+        <button class="btn-primary" id="sendBtn" disabled>Send</button>
+      </div>
+      <p class="hint">
+        Ledger Generic app requires <code>metadata-hash</code> feature enabled
+        at node compile time. Mainnet and testnet have it. For custom/local nodes: rebuild with
+        <code>--features metadata-hash</code>, otherwise transactions will
+        be rejected with <code>CannotLookup</code>.
+      </p>
+    </div>
+
+    <div id="builderPane" class="hidden">
+      <div class="row">
+        <div>
+          <label>Pallet</label>
+          <div class="custom-select" id="palletSelectWrap">
+            <button class="custom-select-trigger" id="palletSelectTrigger" type="button" disabled>
+              <span class="custom-select-label">Connect to load pallets...</span>
+            </button>
+            <div class="custom-select-dropdown hidden" id="palletSelectDropdown"></div>
+          </div>
+        </div>
+        <div>
+          <label>Method</label>
+          <div class="custom-select" id="methodSelectWrap">
+            <button class="custom-select-trigger" id="methodSelectTrigger" type="button" disabled>
+              <span class="custom-select-label">Select a pallet first</span>
+            </button>
+            <div class="custom-select-dropdown hidden" id="methodSelectDropdown"></div>
+          </div>
+        </div>
+      </div>
+      <div class="mt-8" id="extrinsicArgs"></div>
+      <div class="row mt-8">
+        <button class="btn-primary" id="extrinsicSendBtn" disabled>Sign &amp; Send</button>
+      </div>
+      <div class="doc-block mt-8 hidden" id="extrinsicDocs"></div>
+      <p class="hint">
+        Uses the account selected in Accounts. Arguments are parsed as strings;
+        use JSON for complex types (arrays, objects).
+      </p>
+    </div>
+  </section>
+</div>
+
+<!-- Row 3: Status + Log -->
+<div class="bottom-row">
+  <section>
+    <h2>Status</h2>
+    <div class="status-box status-neutral" id="txStatus">Idle</div>
+    <div class="mt-12 hidden" id="txResultWrap">
+      <label>Result</label>
+      <div class="log-wrap">
+        <button class="log-copy-btn" id="resultCopyBtn" title="Copy result"></button>
+        <div class="result-block" id="txResult"></div>
+      </div>
+      <a class="btn-explorer mt-8 hidden" id="explorerLink" href="#" target="_blank" rel="noopener noreferrer">
+        <span id="explorerLinkLabel">View on Explorer</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </a>
+    </div>
+  </section>
+  <section>
+    <h2>Log</h2>
+    <div class="log-wrap">
+      <button class="log-copy-btn" id="logCopyBtn" title="Copy log"></button>
+      <pre class="result-block log-panel" id="logPanel"></pre>
+    </div>
+  </section>
+</div>
 
 <script type="module" src="./app.js"></script>
 
