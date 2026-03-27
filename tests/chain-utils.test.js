@@ -3,7 +3,7 @@ import {
   truncAddr,
   chainSupportsMetadataHash,
   getChainDecimals, getChainToken, isDevChain,
-  getArgTypeName, parseExtrinsicArgs,
+  getArgTypeName, parseTypedArgs,
   formatDocs, txExplorerUrl,
   TAO_DECIMALS, TOKEN_SYMBOL, FINNEY_GENESIS_HASH,
 } from '../src/chain-utils.js';
@@ -148,47 +148,47 @@ describe('getArgTypeName', () => {
   });
 });
 
-// ── parseExtrinsicArgs ──
+// ── parseTypedArgs ──
 
-describe('parseExtrinsicArgs', () => {
+describe('parseTypedArgs', () => {
   it('parses bool true and false', () => {
     const defs = [{ typeName: 'bool', name: 'flag' }];
-    expect(parseExtrinsicArgs(defs, ['true'])).toEqual([true]);
-    expect(parseExtrinsicArgs(defs, ['false'])).toEqual([false]);
+    expect(parseTypedArgs(defs, ['true'])).toEqual([true]);
+    expect(parseTypedArgs(defs, ['false'])).toEqual([false]);
   });
 
   it('keeps u128 as string for BigInt safety', () => {
     const defs = [{ typeName: 'u128', name: 'amount' }];
-    expect(parseExtrinsicArgs(defs, ['123456789012345'])).toEqual(['123456789012345']);
+    expect(parseTypedArgs(defs, ['123456789012345'])).toEqual(['123456789012345']);
   });
 
   it('parses valid JSON object', () => {
     const defs = [{ typeName: 'SomeStruct', name: 'data' }];
-    expect(parseExtrinsicArgs(defs, ['{"a":1}'])).toEqual([{ a: 1 }]);
+    expect(parseTypedArgs(defs, ['{"a":1}'])).toEqual([{ a: 1 }]);
   });
 
   it('parses valid JSON array', () => {
     const defs = [{ typeName: 'Vec<u8>', name: 'ids' }];
-    expect(parseExtrinsicArgs(defs, ['[1,2,3]'])).toEqual([[1, 2, 3]]);
+    expect(parseTypedArgs(defs, ['[1,2,3]'])).toEqual([[1, 2, 3]]);
   });
 
   it('throws on invalid JSON', () => {
     const defs = [{ typeName: 'SomeStruct', name: 'data' }];
-    expect(() => parseExtrinsicArgs(defs, ['{bad'])).toThrow('Invalid JSON for argument "data"');
+    expect(() => parseTypedArgs(defs, ['{bad'])).toThrow('Invalid JSON for argument "data"');
   });
 
   it('passes plain strings through', () => {
     const defs = [{ typeName: 'AccountId', name: 'dest' }];
-    expect(parseExtrinsicArgs(defs, ['5Grw...'])).toEqual(['5Grw...']);
+    expect(parseTypedArgs(defs, ['5Grw...'])).toEqual(['5Grw...']);
   });
 
   it('handles empty array', () => {
-    expect(parseExtrinsicArgs([], [])).toEqual([]);
+    expect(parseTypedArgs([], [])).toEqual([]);
   });
 
   it('passes non-numeric u64 as string (polkadot.js handles encoding error)', () => {
     const defs = [{ typeName: 'u64', name: 'x' }];
-    expect(parseExtrinsicArgs(defs, ['abc'])).toEqual(['abc']);
+    expect(parseTypedArgs(defs, ['abc'])).toEqual(['abc']);
   });
 });
 

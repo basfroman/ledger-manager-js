@@ -58,7 +58,7 @@ export function getArgTypeName(arg, registry) {
   return `type#${arg.type.toString()}`;
 }
 
-export function parseExtrinsicArgs(argDefs, values) {
+export function parseTypedArgs(argDefs, values) {
   return values.map((val, i) => {
     const typeName = (argDefs[i]?.typeName ?? '').toLowerCase();
     const argName = argDefs[i]?.name ?? `arg${i}`;

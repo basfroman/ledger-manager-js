@@ -46,6 +46,18 @@ export function initDomRefs() {
     extrinsicArgs: $('extrinsicArgs'),
     extrinsicSendBtn: $('extrinsicSendBtn'),
     builderPane: $('builderPane'),
+    queryPane: $('queryPane'),
+    rightPanelToggle: $('rightPanelToggle'),
+    rightPanelTitle: $('rightPanelTitle'),
+    qPalletSelectTrigger: $('qPalletSelectTrigger'),
+    qPalletSelectDropdown: $('qPalletSelectDropdown'),
+    qStorageSelectTrigger: $('qStorageSelectTrigger'),
+    qStorageSelectDropdown: $('qStorageSelectDropdown'),
+    queryKeys: $('queryKeys'),
+    queryExecuteBtn: $('queryExecuteBtn'),
+    queryDocs: $('queryDocs'),
+    queryResult: $('queryResult'),
+    queryResultWrap: $('queryResultWrap'),
     logCopyBtn: $('logCopyBtn'),
     resultCopyBtn: $('resultCopyBtn'),
     explorerLink: $('explorerLink'),
@@ -66,11 +78,12 @@ export function syncPanelAvailability() {
 
   dom.sourceSection.classList.toggle('panel-locked', !connected);
   dom.accountsSection.classList.toggle('panel-locked', !connected);
-  dom.txSection.classList.toggle('panel-locked', !accountsReady);
+  dom.txSection.classList.toggle('panel-locked', !connected);
+  dom.builderPane.classList.toggle('panel-locked', connected && !accountsReady);
 
   dom.sourceSection.setAttribute('aria-disabled', String(!connected));
   dom.accountsSection.setAttribute('aria-disabled', String(!connected));
-  dom.txSection.setAttribute('aria-disabled', String(!accountsReady));
+  dom.txSection.setAttribute('aria-disabled', String(!connected));
 }
 
 export function setLedgerStatus(text, tone) {
@@ -280,6 +293,18 @@ export function initUI() {
       dom.resultCopyBtn.innerHTML = ICON_CHECK;
       setTimeout(() => { dom.resultCopyBtn.innerHTML = ICON_COPY; }, COPY_FEEDBACK_MS);
     }
+  });
+
+  dom.rightPanelToggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-pane]');
+    if (!btn) return;
+    const pane = btn.dataset.pane;
+    for (const b of dom.rightPanelToggle.querySelectorAll('button')) {
+      b.classList.toggle('active', b === btn);
+    }
+    dom.builderPane.classList.toggle('hidden', pane !== 'builderPane');
+    dom.queryPane.classList.toggle('hidden', pane !== 'queryPane');
+    dom.rightPanelTitle.textContent = btn.dataset.title;
   });
 
   syncPanelAvailability();

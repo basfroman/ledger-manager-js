@@ -41,6 +41,13 @@ export function mountAppShell() {
 </section>
 </div>
 <section id="txSection">
+<div class="section-header">
+  <h2 id="rightPanelTitle">Extrinsic Builder</h2>
+  <div class="seg-control" id="rightPanelToggle">
+    <button type="button" class="active" data-pane="builderPane" data-title="Extrinsic Builder">Extrinsic</button>
+    <button type="button" data-pane="queryPane" data-title="Queries">Queries</button>
+  </div>
+</div>
 <div id="builderPane">
 <div class="custom-select" id="palletSelectWrap">
   <button class="custom-select-trigger" id="palletSelectTrigger" type="button"><span class="custom-select-label"></span></button>
@@ -51,6 +58,19 @@ export function mountAppShell() {
   <div class="custom-select-dropdown hidden" id="methodSelectDropdown"></div>
 </div>
 <div id="extrinsicDocs"></div><div id="extrinsicArgs"></div><button id="extrinsicSendBtn"></button>
+</div>
+<div id="queryPane" class="hidden">
+<div class="custom-select" id="qPalletSelectWrap">
+  <button class="custom-select-trigger" id="qPalletSelectTrigger" type="button"><span class="custom-select-label"></span></button>
+  <div class="custom-select-dropdown hidden" id="qPalletSelectDropdown"></div>
+</div>
+<div class="custom-select" id="qStorageSelectWrap">
+  <button class="custom-select-trigger" id="qStorageSelectTrigger" type="button"><span class="custom-select-label"></span></button>
+  <div class="custom-select-dropdown hidden" id="qStorageSelectDropdown"></div>
+</div>
+<div id="queryKeys"></div><button id="queryExecuteBtn"></button>
+<div id="queryDocs"></div>
+<div id="queryResultWrap"><pre id="queryResult"></pre></div>
 </div>
 </section>
 </div>

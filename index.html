@@ -101,7 +101,13 @@
   </div>
 
   <section id="txSection" class="panel-locked" aria-disabled="true">
-    <h2>Extrinsic Builder</h2>
+    <div class="section-header">
+      <h2 id="rightPanelTitle">Extrinsic Builder</h2>
+      <div class="seg-control" id="rightPanelToggle">
+        <button type="button" class="active" data-pane="builderPane" data-title="Extrinsic Builder">Extrinsic</button>
+        <button type="button" data-pane="queryPane" data-title="Queries">Queries</button>
+      </div>
+    </div>
 
     <div id="builderPane">
       <div class="row">
@@ -136,6 +142,38 @@
         (mainnet/testnet have it). For custom/local nodes, rebuild with
         <code>--features metadata-hash</code>, or signing may fail with <code>CannotLookup</code>.
       </p>
+    </div>
+
+    <div id="queryPane" class="hidden">
+      <div class="row">
+        <div>
+          <label>Pallet</label>
+          <div class="custom-select" id="qPalletSelectWrap">
+            <button class="custom-select-trigger" id="qPalletSelectTrigger" type="button" disabled>
+              <span class="custom-select-label">Connect to load pallets...</span>
+            </button>
+            <div class="custom-select-dropdown hidden" id="qPalletSelectDropdown"></div>
+          </div>
+        </div>
+        <div>
+          <label>Storage Item</label>
+          <div class="custom-select" id="qStorageSelectWrap">
+            <button class="custom-select-trigger" id="qStorageSelectTrigger" type="button" disabled>
+              <span class="custom-select-label">Select a pallet first</span>
+            </button>
+            <div class="custom-select-dropdown hidden" id="qStorageSelectDropdown"></div>
+          </div>
+        </div>
+      </div>
+      <div class="mt-8" id="queryKeys"></div>
+      <div class="row mt-8">
+        <button class="btn-primary" id="queryExecuteBtn" disabled>Execute Query</button>
+      </div>
+      <div class="doc-block mt-8 hidden" id="queryDocs"></div>
+      <div class="mt-8 hidden" id="queryResultWrap">
+        <label>Result</label>
+        <pre class="result-block query-result-block" id="queryResult"></pre>
+      </div>
     </div>
   </section>
 </div>

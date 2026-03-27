@@ -11,4 +11,6 @@ export const state = {
   networkPresetValue: NETWORK_PRESETS[0].url,
   palletSelectValue: '',
   methodSelectValue: '',
+  qPalletSelectValue: '',
+  qStorageSelectValue: '',
 };

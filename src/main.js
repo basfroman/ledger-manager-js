@@ -9,6 +9,7 @@ import { initUI, syncPanelAvailability } from './ui.js';
 import { initNetwork } from './network.js';
 import { initMonitor, initAccounts, updateAccountsToolbar } from './accounts.js';
 import { initTx, populatePallets, resetExtrinsicBuilder, updateExtrinsicSendButton } from './tx.js';
+import { initQuery, populateQueryPallets, resetQueryBuilder } from './query.js';
 
 initUI();
 initMonitor();
@@ -25,13 +26,16 @@ initNetwork({
   onConnected() {
     updateAccountsToolbar();
     populatePallets(state.api);
+    populateQueryPallets(state.api);
     syncPanelAvailability();
   },
   onDisconnected() {
     updateAccountsToolbar();
     resetExtrinsicBuilder();
+    resetQueryBuilder();
     syncPanelAvailability();
   },
 });
 
 initTx();
+initQuery();
