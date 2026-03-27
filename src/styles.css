@@ -197,8 +197,8 @@ button:disabled { opacity: 0.3; cursor: not-allowed; }
   overflow: hidden;
 }
 
-#txSection > #builderPane,
-#txSection > #queryPane {
+#txSection > #builderPane:not(.hidden),
+#txSection > #queryPane:not(.hidden) {
   flex: 1 1 0;
   overflow: auto;
   min-height: 0;
