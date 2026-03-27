@@ -13,4 +13,6 @@ export const state = {
   methodSelectValue: '',
   qPalletSelectValue: '',
   qStorageSelectValue: '',
+  cPalletSelectValue: '',
+  cConstantSelectValue: '',
 };

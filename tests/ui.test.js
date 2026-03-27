@@ -13,6 +13,7 @@ import {
   positionDropdown,
   syncPanelAvailability,
   parseAccentRgbTuple,
+  initCopyButton,
   dom,
 } from '../src/ui.js';
 import { state } from '../src/state.js';
@@ -65,6 +66,30 @@ describe('populateCustomDropdown', () => {
   it('disables trigger when no items', () => {
     populateCustomDropdown(dom.palletSelectTrigger, dom.palletSelectDropdown, [], 'empty');
     expect(dom.palletSelectTrigger.disabled).toBe(true);
+  });
+
+  it('adds search input when more than 10 items', () => {
+    const items = Array.from({ length: 11 }, (_, i) => `item${i}`);
+    populateCustomDropdown(dom.palletSelectTrigger, dom.palletSelectDropdown, items, '-- pick --');
+    expect(dom.palletSelectDropdown.querySelector('.dd-search')).not.toBeNull();
+  });
+
+  it('does not add search input when 10 or fewer items', () => {
+    const items = Array.from({ length: 10 }, (_, i) => `item${i}`);
+    populateCustomDropdown(dom.palletSelectTrigger, dom.palletSelectDropdown, items, '-- pick --');
+    expect(dom.palletSelectDropdown.querySelector('.dd-search')).toBeNull();
+  });
+});
+
+describe('initCopyButton', () => {
+  it('copies source text on click', async () => {
+    const btn = document.createElement('button');
+    const pre = document.createElement('pre');
+    pre.textContent = 'hello-copy';
+    document.body.append(btn, pre);
+    initCopyButton(btn, pre);
+    btn.click();
+    expect(await navigator.clipboard.readText()).toBe('hello-copy');
   });
 });
 

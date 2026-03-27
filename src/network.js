@@ -1,4 +1,4 @@
-import { chainSupportsMetadataHash, isDevChain } from './chain-utils.js';
+import { chainSupportsMetadataHash, getChainToken, isDevChain } from './chain-utils.js';
 import { NETWORK_PRESETS } from './constants.js';
 import { state } from './state.js';
 import { dom, positionDropdown, setStatus } from './ui.js';
@@ -95,6 +95,9 @@ export function initNetwork({ onConnected, onDisconnected }) {
       }
 
       setStatus(dom.networkStatus, statusLine, hasMetaHash && !devChain ? 'ok' : 'warn');
+      const token = getChainToken(state.api);
+      dom.chainInfoBar.textContent = `Subtensor spec. ${runtime.specVersion} | Block #${blockNum} | ${token}`;
+      dom.appHeader.classList.remove('hidden');
       dom.connectBtn.disabled = true;
       dom.disconnectBtn.disabled = false;
       onConnected();
@@ -111,6 +114,8 @@ export function initNetwork({ onConnected, onDisconnected }) {
     dom.connectBtn.disabled = false;
     dom.disconnectBtn.disabled = true;
     setStatus(dom.networkStatus, 'Disconnected', 'neutral');
+    dom.appHeader.classList.add('hidden');
+    dom.chainInfoBar.textContent = '';
     onDisconnected();
   });
 }

@@ -1,6 +1,7 @@
 /** Minimal HTML so initDomRefs() finds every element (happy-dom / browser tests). */
 export function mountAppShell() {
   document.body.innerHTML = `
+<header id="appHeader" class="hidden"><div id="chainInfoBar"></div></header>
 <div class="main-workspace" id="mainWorkspace">
 <div class="left-column" id="leftColumn">
 <section id="networkSection">
@@ -46,9 +47,11 @@ export function mountAppShell() {
   <div class="seg-control" id="rightPanelToggle">
     <button type="button" class="active" data-pane="builderPane" data-title="Extrinsic Builder">Extrinsic</button>
     <button type="button" data-pane="queryPane" data-title="Queries">Queries</button>
+    <button type="button" data-pane="constantsPane" data-title="Constants">Constants</button>
   </div>
 </div>
 <div id="builderPane">
+<div id="signingAccountBar" class="hidden"><code id="signingAddr"></code></div>
 <div class="custom-select" id="palletSelectWrap">
   <button class="custom-select-trigger" id="palletSelectTrigger" type="button"><span class="custom-select-label"></span></button>
   <div class="custom-select-dropdown hidden" id="palletSelectDropdown"></div>
@@ -57,7 +60,7 @@ export function mountAppShell() {
   <button class="custom-select-trigger" id="methodSelectTrigger" type="button"><span class="custom-select-label"></span></button>
   <div class="custom-select-dropdown hidden" id="methodSelectDropdown"></div>
 </div>
-<div id="extrinsicDocs"></div><div id="extrinsicArgs"></div><button id="extrinsicSendBtn"></button>
+<div id="extrinsicDocs"></div><div id="extrinsicArgs"></div><button id="feeEstimateBtn"></button><button id="extrinsicSendBtn"></button><div id="feeEstimate"></div>
 </div>
 <div id="queryPane" class="hidden">
 <div class="custom-select" id="qPalletSelectWrap">
@@ -70,14 +73,37 @@ export function mountAppShell() {
 </div>
 <div id="queryKeys"></div><button id="queryExecuteBtn"></button>
 <div id="queryDocs"></div>
-<div id="queryResultWrap"><pre id="queryResult"></pre></div>
+<div id="queryResultWrap"><div class="log-wrap"><button class="log-copy-btn" id="queryResultCopyBtn"></button><pre id="queryResult"></pre></div></div>
+</div>
+<div id="constantsPane" class="hidden">
+<div class="custom-select" id="cPalletSelectWrap">
+  <button class="custom-select-trigger" id="cPalletSelectTrigger" type="button"><span class="custom-select-label"></span></button>
+  <div class="custom-select-dropdown hidden" id="cPalletSelectDropdown"></div>
+</div>
+<div class="custom-select" id="cConstantSelectWrap">
+  <button class="custom-select-trigger" id="cConstantSelectTrigger" type="button"><span class="custom-select-label"></span></button>
+  <div class="custom-select-dropdown hidden" id="cConstantSelectDropdown"></div>
+</div>
+<div id="constantDocs"></div>
+<div id="constantResultWrap"><div class="log-wrap"><button class="log-copy-btn" id="constantResultCopyBtn"></button><pre id="constantResult"></pre></div></div>
 </div>
 </section>
 </div>
+<div class="bottom-row" id="bottomRow">
+<section>
 <div id="txStatus"></div>
 <div id="txResultWrap"><div id="txResult"></div></div>
+</section>
+<section id="logSection">
+<button type="button" id="footerCollapseBtn">Collapse</button>
 <pre id="logPanel"></pre>
+</section>
+</div>
 <button id="logCopyBtn"></button><button id="resultCopyBtn"></button>
 <a id="explorerLink"><span id="explorerLinkLabel"></span></a>
+<div id="commandPalette" class="hidden">
+<input id="paletteSearch" />
+<ul id="paletteResults"></ul>
+</div>
 `;
 }

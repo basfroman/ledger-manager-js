@@ -1,7 +1,49 @@
 import { createArgInput, collectInputValues } from './arg-input.js';
-import { getArgTypeName, formatDocs } from './chain-utils.js';
+import { escapeHtml, formatDocs, highlightJson } from './chain-utils.js';
 import { state } from './state.js';
 import { dom, setupCustomDropdown, populateCustomDropdown, log } from './ui.js';
+
+function buildStorageDocHtml(meta, registry) {
+  let html = '';
+
+  const docsHtml = formatDocs(meta.docs.map(d => d.toString()));
+  if (docsHtml) html += docsHtml;
+
+  const parts = [];
+
+  if (meta.modifier) {
+    const mod = meta.modifier.toString();
+    parts.push(`<span class="doc-arg-name">Modifier</span> <span class="doc-arg-type">${mod}</span>`);
+  }
+
+  const storageType = meta.type;
+  if (storageType.isPlain) {
+    try {
+      const valDef = registry.lookup.getTypeDef(storageType.asPlain);
+      parts.push(`<span class="doc-arg-name">Returns</span> <span class="doc-arg-type">${escapeHtml(valDef.type)}</span>`);
+    } catch {}
+  } else if (storageType.isMap) {
+    const mapType = storageType.asMap;
+    try {
+      const valDef = registry.lookup.getTypeDef(mapType.value);
+      parts.push(`<span class="doc-arg-name">Returns</span> <span class="doc-arg-type">${escapeHtml(valDef.type)}</span>`);
+    } catch {}
+    try {
+      const keyDef = registry.lookup.getTypeDef(mapType.key);
+      const hashers = mapType.hashers.map(h => h.toString()).join(', ');
+      parts.push(`<span class="doc-arg-name">Key</span> <span class="doc-arg-type">${escapeHtml(keyDef.type)}</span> <span class="doc-arg-desc">— ${escapeHtml(hashers)}</span>`);
+    } catch {}
+  }
+
+  if (parts.length) {
+    html += '<div class="doc-section"><div class="doc-section-title">Storage info</div>';
+    html += '<ul class="doc-list">';
+    for (const p of parts) html += `<li>${p}</li>`;
+    html += '</ul></div>';
+  }
+
+  return html;
+}
 
 function onQueryPalletChanged(pallet) {
   state.qStorageSelectValue = '';
@@ -19,7 +61,7 @@ function onQueryPalletChanged(pallet) {
   }
 
   const items = Object.keys(state.api.query[pallet]).sort().filter(
-    k => typeof state.api.query[pallet][k] === 'function',
+    k => typeof state.api.query[pallet][k] === 'function' && state.api.query[pallet][k].meta,
   );
   populateCustomDropdown(dom.qStorageSelectTrigger, dom.qStorageSelectDropdown, items, '-- select storage --');
   dom.qStorageSelectTrigger.disabled = false;
@@ -50,7 +92,7 @@ function onStorageItemChanged(item) {
   const meta = entry.meta;
   const registry = state.api.registry;
 
-  const docsHtml = formatDocs(meta.docs.map(d => d.toString()));
+  const docsHtml = buildStorageDocHtml(meta, registry);
   if (docsHtml) {
     dom.queryDocs.innerHTML = docsHtml;
     dom.queryDocs.classList.remove('hidden');
@@ -115,7 +157,8 @@ async function executeQuery() {
   try {
     const keys = collectInputValues(dom.queryKeys);
     const result = await state.api.query[pallet][item](...keys);
-    dom.queryResult.textContent = JSON.stringify(result.toHuman(), null, 2);
+    const json = JSON.stringify(result.toHuman(), null, 2);
+    dom.queryResult.innerHTML = highlightJson(json);
     log(`Query ${pallet}.${item} OK`);
   } catch (err) {
     dom.queryResult.textContent = `Error: ${err.message}`;
@@ -145,6 +188,23 @@ export function resetQueryBuilder() {
   dom.queryResultWrap.classList.add('hidden');
   dom.queryResult.textContent = '';
   dom.queryExecuteBtn.disabled = true;
+}
+
+/** Programmatic selection for command palette. */
+export function selectQuery(pallet, item) {
+  if (!state.api?.query[pallet]?.[item]) return;
+  state.qPalletSelectValue = pallet;
+  onQueryPalletChanged(pallet);
+  state.qStorageSelectValue = item;
+  onStorageItemChanged(item);
+  dom.qPalletSelectTrigger.querySelector('.custom-select-label').textContent = pallet;
+  dom.qStorageSelectTrigger.querySelector('.custom-select-label').textContent = item;
+  dom.qPalletSelectDropdown.querySelectorAll('.custom-select-option').forEach(o => {
+    o.classList.toggle('selected', o.dataset.value === pallet);
+  });
+  dom.qStorageSelectDropdown.querySelectorAll('.custom-select-option').forEach(o => {
+    o.classList.toggle('selected', o.dataset.value === item);
+  });
 }
 
 export function initQuery() {

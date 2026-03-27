@@ -5,6 +5,8 @@ import {
   getChainDecimals, getChainToken, isDevChain,
   getArgTypeName, parseTypedArgs,
   formatDocs, txExplorerUrl,
+  escapeHtml,
+  highlightJson,
   TAO_DECIMALS, TOKEN_SYMBOL, FINNEY_GENESIS_HASH,
 } from '../src/chain-utils.js';
 
@@ -316,5 +318,19 @@ describe('txExplorerUrl', () => {
   it('Finney link ignores blockHash entirely', () => {
     const result = txExplorerUrl(txHash, FINNEY_GENESIS_HASH, 'wss://finney.opentensor.ai:443');
     expect(result.url).toBe(`https://www.tao.app/tx/${txHash}`);
+  });
+});
+
+describe('escapeHtml', () => {
+  it('escapes ampersand, lt, gt', () => {
+    expect(escapeHtml('a & b < c > d')).toBe('a &amp; b &lt; c &gt; d');
+  });
+});
+
+describe('highlightJson', () => {
+  it('wraps JSON tokens in spans', () => {
+    const out = highlightJson('{"a":1}');
+    expect(out).toContain('json-key');
+    expect(out).toContain('json-num');
   });
 });

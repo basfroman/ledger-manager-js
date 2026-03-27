@@ -247,12 +247,13 @@ async function broadcastSignedTx(signedTx) {
 
         log(`Events: ${submitResult.events?.map(e => `${e.event.section}.${e.event.method}`).join(', ')}`);
 
+        const decodedEvents = submitResult.events;
         state.api.rpc.chain.getHeader(blockHash).then(header => {
           const blockNum = header.number.toNumber();
           log(`Block #${blockNum}`);
-          finish(() => resolve({ txHash, blockHash, blockNumber: blockNum }));
+          finish(() => resolve({ txHash, blockHash, blockNumber: blockNum, events: decodedEvents }));
         }).catch(() => {
-          finish(() => resolve({ txHash, blockHash, blockNumber: '?' }));
+          finish(() => resolve({ txHash, blockHash, blockNumber: '?', events: decodedEvents }));
         });
       } else if (status.isDropped || status.isInvalid || status.isUsurped) {
         log(`Dropped/Invalid: ${status.type}`);
@@ -272,11 +273,18 @@ async function broadcastSignedTx(signedTx) {
 
   setTxStatus(`Success! Included in block #${result.blockNumber}`, 'ok');
   dom.txResultWrap.classList.remove('hidden');
-  dom.txResult.textContent = [
+  const lines = [
     `Transaction Hash: ${result.txHash}`,
     `Block Hash:       ${result.blockHash}`,
     `Block Number:     ${result.blockNumber}`,
-  ].join('\n');
+  ];
+  if (result.events?.length) {
+    lines.push('', 'Events:');
+    for (const { event } of result.events) {
+      lines.push(`  ${event.section}.${event.method}: ${JSON.stringify(event.data.toHuman())}`);
+    }
+  }
+  dom.txResult.textContent = lines.join('\n');
 
   const explorer = txExplorerUrl(
     result.txHash,
@@ -320,6 +328,10 @@ export function resetExtrinsicBuilder() {
   dom.extrinsicDocs.classList.add('hidden');
   dom.extrinsicArgs.innerHTML = '';
   dom.extrinsicSendBtn.disabled = true;
+  dom.feeEstimateBtn.disabled = true;
+  dom.feeEstimate.textContent = '';
+  dom.feeEstimate.classList.add('hidden');
+  dom.signingAccountBar.classList.add('hidden');
 }
 
 export function collectArgs() {
@@ -327,13 +339,21 @@ export function collectArgs() {
 }
 
 export function updateExtrinsicSendButton() {
+  if (state.selectedAccount) {
+    dom.signingAddr.textContent = truncAddr(state.selectedAccount.address);
+    dom.signingAccountBar.classList.remove('hidden');
+  } else {
+    dom.signingAccountBar.classList.add('hidden');
+  }
   if (!state.api || !state.selectedAccount || !state.palletSelectValue || !state.methodSelectValue) {
     dom.extrinsicSendBtn.disabled = true;
+    dom.feeEstimateBtn.disabled = true;
     return;
   }
   const inputs = [...dom.extrinsicArgs.querySelectorAll('[data-arg-name]')];
   const allFilled = inputs.length === 0 || inputs.every(i => i.value?.trim());
   dom.extrinsicSendBtn.disabled = !allFilled;
+  dom.feeEstimateBtn.disabled = !allFilled;
 }
 
 function onPalletChanged(pallet) {
@@ -342,6 +362,7 @@ function onPalletChanged(pallet) {
   dom.extrinsicDocs.classList.add('hidden');
   dom.extrinsicArgs.innerHTML = '';
   dom.extrinsicSendBtn.disabled = true;
+  dom.feeEstimate.classList.add('hidden');
   if (!pallet || !state.api?.tx[pallet]) {
     populateCustomDropdown(dom.methodSelectTrigger, dom.methodSelectDropdown, [], '-- select method --');
     dom.methodSelectTrigger.disabled = true;
@@ -360,6 +381,7 @@ function onMethodChanged(method) {
   dom.extrinsicDocs.classList.add('hidden');
   dom.extrinsicArgs.innerHTML = '';
   dom.extrinsicSendBtn.disabled = true;
+  dom.feeEstimate.classList.add('hidden');
   if (!pallet || !method || !state.api?.tx[pallet]?.[method]) return;
 
   const fn = state.api.tx[pallet][method];
@@ -395,6 +417,23 @@ function onMethodChanged(method) {
   updateExtrinsicSendButton();
 }
 
+/** Programmatic selection for command palette / deep links. */
+export function selectExtrinsic(pallet, method) {
+  if (!state.api?.tx[pallet]?.[method]) return;
+  state.palletSelectValue = pallet;
+  onPalletChanged(pallet);
+  state.methodSelectValue = method;
+  onMethodChanged(method);
+  dom.palletSelectTrigger.querySelector('.custom-select-label').textContent = pallet;
+  dom.methodSelectTrigger.querySelector('.custom-select-label').textContent = method;
+  dom.palletSelectDropdown.querySelectorAll('.custom-select-option').forEach(o => {
+    o.classList.toggle('selected', o.dataset.value === pallet);
+  });
+  dom.methodSelectDropdown.querySelectorAll('.custom-select-option').forEach(o => {
+    o.classList.toggle('selected', o.dataset.value === method);
+  });
+}
+
 export function initTx() {
   setupCustomDropdown(dom.palletSelectTrigger, dom.palletSelectDropdown, 'palletSelectWrap', (value) => {
     state.palletSelectValue = value;
@@ -404,6 +443,26 @@ export function initTx() {
   setupCustomDropdown(dom.methodSelectTrigger, dom.methodSelectDropdown, 'methodSelectWrap', (value) => {
     state.methodSelectValue = value;
     onMethodChanged(value);
+  });
+
+  dom.feeEstimateBtn.addEventListener('click', async () => {
+    if (!state.api || !state.selectedAccount) return;
+    const pallet = state.palletSelectValue;
+    const method = state.methodSelectValue;
+    if (!pallet || !method) return;
+    dom.feeEstimateBtn.disabled = true;
+    dom.feeEstimate.classList.remove('hidden');
+    dom.feeEstimate.textContent = 'Estimating...';
+    try {
+      const args = collectArgs();
+      const tx = state.api.tx[pallet][method](...args);
+      const info = await tx.paymentInfo(state.selectedAccount.address);
+      dom.feeEstimate.textContent = `Estimated fee: ${info.partialFee.toHuman()}`;
+    } catch (err) {
+      dom.feeEstimate.textContent = `Fee estimation failed: ${err.message}`;
+    } finally {
+      dom.feeEstimateBtn.disabled = false;
+    }
   });
 
   dom.extrinsicSendBtn.addEventListener('click', async () => {

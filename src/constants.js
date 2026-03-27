@@ -5,7 +5,7 @@ export const ACCOUNT_SOURCE = Object.freeze({
 });
 
 /** Passed to `web3Enable` — appears in extension authorization UI. */
-export const EXTENSION_DAPP_ORIGIN = 'ledger-tool';
+export const EXTENSION_DAPP_ORIGIN = 'tao-forge';
 
 /** Friendly labels for `window.injectedWeb3` keys (fallback: raw key). */
 export const EXTENSION_DISPLAY_LABELS = Object.freeze({

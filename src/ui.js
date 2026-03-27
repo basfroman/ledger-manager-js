@@ -45,6 +45,10 @@ export function initDomRefs() {
     extrinsicDocs: $('extrinsicDocs'),
     extrinsicArgs: $('extrinsicArgs'),
     extrinsicSendBtn: $('extrinsicSendBtn'),
+    feeEstimateBtn: $('feeEstimateBtn'),
+    feeEstimate: $('feeEstimate'),
+    signingAccountBar: $('signingAccountBar'),
+    signingAddr: $('signingAddr'),
     builderPane: $('builderPane'),
     queryPane: $('queryPane'),
     rightPanelToggle: $('rightPanelToggle'),
@@ -58,6 +62,16 @@ export function initDomRefs() {
     queryDocs: $('queryDocs'),
     queryResult: $('queryResult'),
     queryResultWrap: $('queryResultWrap'),
+    queryResultCopyBtn: $('queryResultCopyBtn'),
+    constantsPane: $('constantsPane'),
+    cPalletSelectTrigger: $('cPalletSelectTrigger'),
+    cPalletSelectDropdown: $('cPalletSelectDropdown'),
+    cConstantSelectTrigger: $('cConstantSelectTrigger'),
+    cConstantSelectDropdown: $('cConstantSelectDropdown'),
+    constantDocs: $('constantDocs'),
+    constantResult: $('constantResult'),
+    constantResultWrap: $('constantResultWrap'),
+    constantResultCopyBtn: $('constantResultCopyBtn'),
     logCopyBtn: $('logCopyBtn'),
     resultCopyBtn: $('resultCopyBtn'),
     explorerLink: $('explorerLink'),
@@ -65,6 +79,13 @@ export function initDomRefs() {
     sourceSection: $('sourceSection'),
     accountsSection: $('accountsSection'),
     txSection: $('txSection'),
+    appHeader: $('appHeader'),
+    chainInfoBar: $('chainInfoBar'),
+    bottomRow: $('bottomRow'),
+    footerCollapseBtn: $('footerCollapseBtn'),
+    commandPalette: $('commandPalette'),
+    paletteSearch: $('paletteSearch'),
+    paletteResults: $('paletteResults'),
   });
 }
 
@@ -129,7 +150,15 @@ export function setupCustomDropdown(trigger, dropdown, wrapId, onChange) {
     if (trigger.disabled) return;
     const wasHidden = dropdown.classList.contains('hidden');
     dropdown.classList.toggle('hidden');
-    if (wasHidden) positionDropdown(trigger, dropdown);
+    if (wasHidden) {
+      positionDropdown(trigger, dropdown);
+      const si = dropdown.querySelector('.dd-search');
+      if (si) {
+        si.value = '';
+        si.dispatchEvent(new Event('input'));
+        si.focus();
+      }
+    }
     const isOpen = !dropdown.classList.contains('hidden');
     if (trigger.hasAttribute('aria-expanded')) {
       trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
@@ -145,6 +174,13 @@ export function setupCustomDropdown(trigger, dropdown, wrapId, onChange) {
     if (trigger.hasAttribute('aria-expanded')) trigger.setAttribute('aria-expanded', 'false');
     onChange(opt.dataset.value);
   });
+  dropdown.addEventListener('input', (e) => {
+    if (!e.target.classList.contains('dd-search')) return;
+    const q = e.target.value.toLowerCase();
+    dropdown.querySelectorAll('.custom-select-option').forEach(opt => {
+      opt.style.display = opt.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
   document.addEventListener('click', (e) => {
     if (!e.target.closest(`#${wrapId}`)) {
       dropdown.classList.add('hidden');
@@ -155,6 +191,14 @@ export function setupCustomDropdown(trigger, dropdown, wrapId, onChange) {
 
 export function populateCustomDropdown(trigger, dropdown, items, placeholder) {
   dropdown.innerHTML = '';
+  if (items.length > 10) {
+    const search = document.createElement('input');
+    search.className = 'dd-search';
+    search.type = 'text';
+    search.placeholder = 'Type to filter...';
+    search.autocomplete = 'off';
+    dropdown.appendChild(search);
+  }
   for (const item of items) {
     const div = document.createElement('div');
     div.className = 'custom-select-option';
@@ -260,6 +304,17 @@ export function matrixRain() {
   requestAnimationFrame(draw);
 }
 
+export function initCopyButton(btn, sourceEl) {
+  btn.innerHTML = ICON_COPY;
+  btn.addEventListener('click', async () => {
+    const ok = await copyToClipboard(sourceEl.textContent);
+    if (ok) {
+      btn.innerHTML = ICON_CHECK;
+      setTimeout(() => { btn.innerHTML = ICON_COPY; }, COPY_FEEDBACK_MS);
+    }
+  });
+}
+
 /** @param {(mode: string) => void} onSelectMode `data-mode` value: ACCOUNT_SOURCE.LEDGER | ACCOUNT_SOURCE.WALLET */
 export function initAccountSourceToggle(onSelectMode) {
   dom.accountSourceToggle.addEventListener('click', (e) => {
@@ -276,24 +331,10 @@ export function initAccountSourceToggle(onSelectMode) {
 
 export function initUI() {
   initDomRefs();
-  dom.logCopyBtn.innerHTML = ICON_COPY;
-  dom.resultCopyBtn.innerHTML = ICON_COPY;
-
-  dom.logCopyBtn.addEventListener('click', async () => {
-    const ok = await copyToClipboard(dom.logPanel.textContent);
-    if (ok) {
-      dom.logCopyBtn.innerHTML = ICON_CHECK;
-      setTimeout(() => { dom.logCopyBtn.innerHTML = ICON_COPY; }, COPY_FEEDBACK_MS);
-    }
-  });
-
-  dom.resultCopyBtn.addEventListener('click', async () => {
-    const ok = await copyToClipboard(dom.txResult.textContent);
-    if (ok) {
-      dom.resultCopyBtn.innerHTML = ICON_CHECK;
-      setTimeout(() => { dom.resultCopyBtn.innerHTML = ICON_COPY; }, COPY_FEEDBACK_MS);
-    }
-  });
+  initCopyButton(dom.logCopyBtn, dom.logPanel);
+  initCopyButton(dom.resultCopyBtn, dom.txResult);
+  initCopyButton(dom.queryResultCopyBtn, dom.queryResult);
+  initCopyButton(dom.constantResultCopyBtn, dom.constantResult);
 
   dom.rightPanelToggle.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-pane]');
@@ -304,6 +345,7 @@ export function initUI() {
     }
     dom.builderPane.classList.toggle('hidden', pane !== 'builderPane');
     dom.queryPane.classList.toggle('hidden', pane !== 'queryPane');
+    dom.constantsPane.classList.toggle('hidden', pane !== 'constantsPane');
     dom.rightPanelTitle.textContent = btn.dataset.title;
   });
 

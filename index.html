@@ -4,13 +4,17 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-<title>Extrinsic Builder — Bittensor</title>
+<title>Tao Forge — Bittensor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/src/styles.css" />
 </head>
 <body>
+
+<header id="appHeader" class="app-header hidden">
+  <div id="chainInfoBar" class="chain-info-bar text-muted text-sm"></div>
+</header>
 
 <div class="main-workspace" id="mainWorkspace">
   <div class="left-column" id="leftColumn">
@@ -106,10 +110,12 @@
       <div class="seg-control" id="rightPanelToggle">
         <button type="button" class="active" data-pane="builderPane" data-title="Extrinsic Builder">Extrinsic</button>
         <button type="button" data-pane="queryPane" data-title="Queries">Queries</button>
+        <button type="button" data-pane="constantsPane" data-title="Constants">Constants</button>
       </div>
     </div>
 
     <div id="builderPane">
+      <div id="signingAccountBar" class="text-muted text-sm hidden">Signing as: <code id="signingAddr"></code></div>
       <div class="row">
         <div>
           <label>Pallet</label>
@@ -131,9 +137,11 @@
         </div>
       </div>
       <div class="mt-8" id="extrinsicArgs"></div>
-      <div class="row mt-8">
+      <div class="row mt-8 sticky-action">
+        <button class="btn-secondary" id="feeEstimateBtn" disabled>Estimate Fee</button>
         <button class="btn-primary" id="extrinsicSendBtn" disabled>Sign &amp; Send</button>
       </div>
+      <div class="text-sm text-muted mt-8 hidden" id="feeEstimate"></div>
       <div class="doc-block mt-8 hidden" id="extrinsicDocs"></div>
       <p class="hint">
         Uses the account selected in Accounts. Arguments are parsed as strings;
@@ -172,14 +180,48 @@
       <div class="doc-block mt-8 hidden" id="queryDocs"></div>
       <div class="mt-8 hidden" id="queryResultWrap">
         <label>Result</label>
-        <pre class="result-block query-result-block" id="queryResult"></pre>
+        <div class="log-wrap">
+          <button class="log-copy-btn" id="queryResultCopyBtn" title="Copy result"></button>
+          <pre class="result-block query-result-block" id="queryResult"></pre>
+        </div>
+      </div>
+    </div>
+
+    <div id="constantsPane" class="hidden">
+      <div class="row">
+        <div>
+          <label>Pallet</label>
+          <div class="custom-select" id="cPalletSelectWrap">
+            <button class="custom-select-trigger" id="cPalletSelectTrigger" type="button" disabled>
+              <span class="custom-select-label">Connect to load pallets...</span>
+            </button>
+            <div class="custom-select-dropdown hidden" id="cPalletSelectDropdown"></div>
+          </div>
+        </div>
+        <div>
+          <label>Constant</label>
+          <div class="custom-select" id="cConstantSelectWrap">
+            <button class="custom-select-trigger" id="cConstantSelectTrigger" type="button" disabled>
+              <span class="custom-select-label">Select a pallet first</span>
+            </button>
+            <div class="custom-select-dropdown hidden" id="cConstantSelectDropdown"></div>
+          </div>
+        </div>
+      </div>
+      <div class="doc-block mt-8 hidden" id="constantDocs"></div>
+      <div class="mt-8 hidden" id="constantResultWrap">
+        <label>Value</label>
+        <div class="log-wrap">
+          <button class="log-copy-btn" id="constantResultCopyBtn" title="Copy value"></button>
+          <pre class="result-block query-result-block" id="constantResult"></pre>
+        </div>
       </div>
     </div>
   </section>
 </div>
 
 <!-- Footer: Status + Log -->
-<div class="bottom-row">
+<div class="bottom-row" id="bottomRow">
   <section>
     <h2>Status</h2>
     <div class="status-box status-neutral" id="txStatus">Idle</div>
@@ -195,13 +237,23 @@
       </a>
     </div>
   </section>
-  <section>
-    <h2>Log</h2>
+  <section id="logSection">
+    <div class="section-header">
+      <h2>Log</h2>
+      <button type="button" class="btn-secondary btn-sm" id="footerCollapseBtn">Collapse</button>
+    </div>
     <div class="log-wrap">
       <button class="log-copy-btn" id="logCopyBtn" title="Copy log"></button>
       <pre class="result-block log-panel" id="logPanel"></pre>
     </div>
   </section>
+</div>
+
+<div id="commandPalette" class="command-palette-overlay hidden" aria-hidden="true">
+  <div class="command-palette">
+    <input type="text" id="paletteSearch" class="palette-search" placeholder="Search extrinsics, queries, constants…" autocomplete="off" />
+    <ul id="paletteResults" class="palette-results"></ul>
+  </div>
 </div>
 
 <script type="module" src="/src/main.js"></script>

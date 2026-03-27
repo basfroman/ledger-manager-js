@@ -21,6 +21,7 @@ describe('updateExtrinsicSendButton', () => {
     state.palletSelectValue = '';
     updateExtrinsicSendButton();
     expect(dom.extrinsicSendBtn.disabled).toBe(true);
+    expect(dom.feeEstimateBtn.disabled).toBe(true);
   });
 
   it('enables when no arg fields and pallet+method set', () => {
@@ -29,5 +30,22 @@ describe('updateExtrinsicSendButton', () => {
     dom.extrinsicArgs.innerHTML = '';
     updateExtrinsicSendButton();
     expect(dom.extrinsicSendBtn.disabled).toBe(false);
+    expect(dom.feeEstimateBtn.disabled).toBe(false);
+  });
+
+  it('shows signing bar when account selected', () => {
+    state.selectedAccount = { address: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY' };
+    state.palletSelectValue = 'balances';
+    state.methodSelectValue = 'transfer_keep_alive';
+    dom.extrinsicArgs.innerHTML = '';
+    updateExtrinsicSendButton();
+    expect(dom.signingAccountBar.classList.contains('hidden')).toBe(false);
+    expect(dom.signingAddr.textContent).toContain('...');
+  });
+
+  it('hides signing bar when no account', () => {
+    state.selectedAccount = null;
+    updateExtrinsicSendButton();
+    expect(dom.signingAccountBar.classList.contains('hidden')).toBe(true);
   });
 });

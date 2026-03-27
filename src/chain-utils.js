@@ -76,18 +76,34 @@ export function parseTypedArgs(argDefs, values) {
   });
 }
 
+export function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+export function highlightJson(json) {
+  return json.replace(
+    /("(?:\\.|[^"\\])*")\s*:|("(?:\\.|[^"\\])*")|(true|false|null)|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g,
+    (match, key, str, lit, num) => {
+      if (key) return `<span class="json-key">${escapeHtml(key)}</span>:`;
+      if (str) return `<span class="json-str">${escapeHtml(str)}</span>`;
+      if (lit) return `<span class="json-lit">${escapeHtml(lit)}</span>`;
+      if (num) return `<span class="json-num">${escapeHtml(num)}</span>`;
+      return match;
+    },
+  );
+}
+
 export function formatDocs(docStrings) {
   if (!docStrings?.length) return '';
   const text = docStrings.map(d => String(d)).join('\n');
   const trimmed = text.trim();
   if (!trimmed) return '';
 
-  const escape = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const cleanDashes = s => s
     .replace(/\s*[—–\-]\s*[—–\-]\s*/g, ' — ')
     .replace(/\s*:\s*[—–\-]\s*/g, ' — ')
     .replace(/^\s*[—–\-]\s+/, '');
-  const inline = s => escape(cleanDashes(s))
+  const inline = s => escapeHtml(cleanDashes(s))
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/'([A-Z]\w+)'/g, '<code>$1</code>');
 
@@ -126,7 +142,7 @@ export function formatDocs(docStrings) {
     }
 
     html += `<div class="doc-section">`;
-    html += `<div class="doc-section-title">${escape(sec.title)}</div>`;
+    html += `<div class="doc-section-title">${escapeHtml(sec.title)}</div>`;
 
     const items = parseItems(sec.lines);
     if (items.length) {
