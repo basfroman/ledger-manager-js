@@ -1,7 +1,7 @@
 import { chainSupportsMetadataHash, isDevChain } from './chain-utils.js';
 import { NETWORK_PRESETS } from './constants.js';
 import { state } from './state.js';
-import { dom, positionDropdown, setStatus, swapTopSections } from './ui.js';
+import { dom, positionDropdown, setStatus } from './ui.js';
 import { ApiPromise, WsProvider } from './deps.js';
 
 export function getRpcUrl() {
@@ -80,8 +80,7 @@ export function initNetwork({ onConnected, onDisconnected }) {
       if (state.api) { try { await state.api.disconnect(); } catch {} }
       const provider = new WsProvider(url);
       state.api = await ApiPromise.create({ provider, noInitWarn: true });
-      const [chain, runtime, header] = await Promise.all([
-        state.api.rpc.system.chain(),
+      const [runtime, header] = await Promise.all([
         state.api.rpc.state.getRuntimeVersion(),
         state.api.rpc.chain.getHeader(),
       ]);
@@ -89,7 +88,7 @@ export function initNetwork({ onConnected, onDisconnected }) {
       const hasMetaHash = chainSupportsMetadataHash(state.api);
       const devChain = isDevChain(state.api);
 
-      let statusLine = `Connected: ${chain} v${runtime.specVersion} | Block #${blockNum}`;
+      let statusLine = `Connected: Subtensor spec. ${runtime.specVersion} | Block #${blockNum}`;
       if (devChain) statusLine += ' | DEV CHAIN (metadata hash will be broken)';
       if (!hasMetaHash) {
         statusLine += ' | WARNING: Ledger needs CheckMetadataHash; Wallet (extension) may still work';
@@ -98,7 +97,6 @@ export function initNetwork({ onConnected, onDisconnected }) {
       setStatus(dom.networkStatus, statusLine, hasMetaHash && !devChain ? 'ok' : 'warn');
       dom.connectBtn.disabled = true;
       dom.disconnectBtn.disabled = false;
-      swapTopSections(true);
       onConnected();
     } catch (err) {
       setStatus(dom.networkStatus, `Connection failed: ${err.message}`, 'err');
@@ -112,7 +110,6 @@ export function initNetwork({ onConnected, onDisconnected }) {
     state.api = null;
     dom.connectBtn.disabled = false;
     dom.disconnectBtn.disabled = true;
-    swapTopSections(false);
     setStatus(dom.networkStatus, 'Disconnected', 'neutral');
     onDisconnected();
   });

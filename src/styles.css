@@ -167,42 +167,73 @@ button:disabled { opacity: 0.3; cursor: not-allowed; }
 
 /* ── Grid layouts ── */
 
-.top-row {
+.main-workspace {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  flex: 0 0 auto;
-}
-.mid-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
   flex: 1 1 0;
   min-height: 0;
   margin: 8px 0;
+  align-items: stretch;
 }
-.mid-row > section {
+
+.left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.left-column > #networkSection,
+.left-column > #sourceSection {
+  flex: 0 0 auto;
+}
+
+.left-column > #accountsSection {
+  flex: 1 1 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
-.mid-row > section > .accounts-scroll,
-.mid-row > section > #transferPane,
-.mid-row > section > #builderPane {
+
+#txSection {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+#txSection > #builderPane {
   flex: 1 1 0;
   overflow: auto;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
+
 .bottom-row {
   display: grid;
   grid-template-columns: 1fr 2fr;
   gap: 8px;
   flex: 0 0 auto;
 }
+
+/* Disabled until chain connected / accounts loaded */
+.panel-locked {
+  opacity: 0.48;
+  pointer-events: none;
+  user-select: none;
+}
+
 @media (max-width: 800px) {
   body { height: auto; min-height: 100vh; }
-  .top-row, .mid-row, .bottom-row { grid-template-columns: 1fr; }
-  .mid-row { flex: none; }
+  .main-workspace,
+  .bottom-row { grid-template-columns: 1fr; }
+  .main-workspace { flex: none; }
 }
 
 /* ── Status boxes ── */
@@ -448,7 +479,7 @@ tr[data-selectable]:hover { background: var(--surface2); cursor: pointer; }
   flex-direction: column;
 }
 #networkSection > #networkStatus {
-  margin-top: auto;
+  margin-top: 16px;
 }
 
 .network-fields {
@@ -479,21 +510,6 @@ tr[data-selectable]:hover { background: var(--surface2); cursor: pointer; }
   overflow-y: auto;
   min-height: 0;
 }
-
-/* ── Top row swap animation ── */
-
-.top-row > section {
-  min-height: 0;
-  overflow: visible;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s;
-}
-.top-row.swapped > #networkSection { order: 2; }
-.top-row.swapped > #ledgerSection { order: 1; }
-
-.top-row.swap-slide-out > #networkSection { transform: translateX(calc(100% + 8px)); opacity: 0.3; }
-.top-row.swap-slide-out > #ledgerSection { transform: translateX(calc(-100% - 8px)); opacity: 0.3; }
-.top-row.swap-slide-back > #networkSection { transform: translateX(calc(-100% - 8px)); opacity: 0.3; }
-.top-row.swap-slide-back > #ledgerSection { transform: translateX(calc(100% + 8px)); opacity: 0.3; }
 
 /* ── Custom select dropdown ── */
 

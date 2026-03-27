@@ -18,7 +18,7 @@ import {
 import { ACCOUNT_SOURCE, MERKLE_DECIMALS, MERKLE_TOKEN, MSG_LEDGER_NO_METADATA_HASH } from './constants.js';
 import { web3FromAddress } from '@polkadot/extension-dapp';
 import { u8aToHex, merkleizeMetadata } from './deps.js';
-import { monitor, updateSendButton } from './accounts.js';
+import { monitor } from './accounts.js';
 import { getRpcUrl } from './network.js';
 import { state } from './state.js';
 import {
@@ -450,56 +450,6 @@ export function initTx() {
   setupCustomDropdown(dom.methodSelectTrigger, dom.methodSelectDropdown, 'methodSelectWrap', (value) => {
     state.methodSelectValue = value;
     onMethodChanged(value);
-  });
-
-  dom.sendBtn.addEventListener('click', async () => {
-    if (!state.api || !state.selectedAccount) return;
-    const to = dom.toAddress.value.trim();
-    const taoAmount = parseFloat(dom.amountInput.value);
-    if (!to || isNaN(taoAmount) || taoAmount <= 0) {
-      setTxStatus('Invalid input', 'err');
-      return;
-    }
-    clearLog();
-    const amountRao = BigInt(Math.round(taoAmount * 1e9));
-    const { address: fromAddr, accountIndex, addressOffset } = state.selectedAccount;
-    dom.sendBtn.disabled = true;
-    dom.txResultWrap.classList.add('hidden');
-    dom.txResult.textContent = '';
-    dom.explorerLink.classList.add('hidden');
-    const { hasMetaHash, devChain } = logChainContext();
-    if (state.accountSource === ACCOUNT_SOURCE.LEDGER) {
-      if (!hasMetaHash) {
-        log('FATAL: chain has no CheckMetadataHash');
-        setTxStatus(MSG_LEDGER_NO_METADATA_HASH, 'err');
-        dom.sendBtn.disabled = false;
-        return;
-      }
-      if (devChain) {
-        log('WARNING: dev chain detected (Unit/0)');
-      }
-    } else {
-      log(`Wallet mode: CheckMetadataHash in runtime: ${hasMetaHash} (extension uses standard signing)`);
-      if (devChain) log('WARNING: dev chain detected (Unit/0)');
-    }
-    log('');
-    log('═══ TRANSFER ═══');
-    log(`from: ${fromAddr}`);
-    log(`to:   ${to}`);
-    log(`amount: ${taoAmount} TAO = ${amountRao.toString()} RAO`);
-    try {
-      const tx = state.api.tx.balances.transferKeepAlive(to, amountRao);
-      if (state.accountSource === ACCOUNT_SOURCE.WALLET) {
-        await signAndSendExtension(tx, fromAddr);
-      } else {
-        await signAndSendLedger(tx, fromAddr, accountIndex, addressOffset);
-      }
-    } catch (err) {
-      handleTxError(err);
-    } finally {
-      dom.sendBtn.disabled = false;
-      updateSendButton();
-    }
   });
 
   dom.extrinsicSendBtn.addEventListener('click', async () => {

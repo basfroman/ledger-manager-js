@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { mountAppShell } from './helpers/test-dom-shell.js';
 import {
   initDomRefs,
@@ -11,10 +11,11 @@ import {
   setStatus,
   populateCustomDropdown,
   positionDropdown,
-  swapTopSections,
+  syncPanelAvailability,
   parseAccentRgbTuple,
   dom,
 } from '../src/ui.js';
+import { state } from '../src/state.js';
 
 beforeEach(() => {
   mountAppShell();
@@ -93,15 +94,24 @@ describe('parseAccentRgbTuple', () => {
   });
 });
 
-describe('swapTopSections', () => {
-  it('adds swap-slide-out then toggles swapped after timeout', async () => {
-    vi.useFakeTimers();
-    swapTopSections(true);
-    expect(dom.topRow.classList.contains('swap-slide-out')).toBe(true);
-    vi.advanceTimersByTime(420);
-    await Promise.resolve();
-    expect(dom.topRow.classList.contains('swapped')).toBe(true);
-    expect(dom.topRow.classList.contains('swap-slide-out')).toBe(false);
-    vi.useRealTimers();
+describe('syncPanelAvailability', () => {
+  it('locks source and accounts until connected; extrinsic until accounts loaded', () => {
+    state.api = null;
+    state.lastLoadedAccounts = [];
+    syncPanelAvailability();
+    expect(dom.sourceSection.classList.contains('panel-locked')).toBe(true);
+    expect(dom.accountsSection.classList.contains('panel-locked')).toBe(true);
+    expect(dom.txSection.classList.contains('panel-locked')).toBe(true);
+
+    state.api = { rpc: {} };
+    state.lastLoadedAccounts = [];
+    syncPanelAvailability();
+    expect(dom.sourceSection.classList.contains('panel-locked')).toBe(false);
+    expect(dom.accountsSection.classList.contains('panel-locked')).toBe(false);
+    expect(dom.txSection.classList.contains('panel-locked')).toBe(true);
+
+    state.lastLoadedAccounts = [{ accountIndex: 0, address: '5x' }];
+    syncPanelAvailability();
+    expect(dom.txSection.classList.contains('panel-locked')).toBe(false);
   });
 });

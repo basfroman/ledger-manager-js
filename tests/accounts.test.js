@@ -6,7 +6,7 @@ import {
   mergeAccountsData,
   normalizeExtensionAccount,
   resolveEnabledExtensionName,
-  updateSendButton,
+  updateAccountsToolbar,
 } from '../src/accounts.js';
 import { ACCOUNT_SOURCE } from '../src/constants.js';
 import { mountAppShell } from './helpers/test-dom-shell.js';
@@ -67,26 +67,23 @@ describe('normalizeExtensionAccount', () => {
   });
 });
 
-describe('updateSendButton', () => {
+describe('updateAccountsToolbar', () => {
   beforeEach(() => {
     mountAppShell();
     initDomRefs();
     state.api = { rpc: {} };
     state.selectedAccount = { address: '5xxx' };
     state.lastLoadedAccounts = [{ accountIndex: 0 }];
-    dom.toAddress.value = '5yyy';
-    dom.amountInput.value = '1';
   });
 
-  it('enables send when api, account, to, amount', () => {
-    updateSendButton();
-    expect(dom.sendBtn.disabled).toBe(false);
+  it('enables refresh balances when api and accounts', () => {
+    updateAccountsToolbar();
     expect(dom.refreshBalancesBtn.disabled).toBe(false);
   });
 
-  it('disables send when missing amount', () => {
-    dom.amountInput.value = '';
-    updateSendButton();
-    expect(dom.sendBtn.disabled).toBe(true);
+  it('disables refresh when no accounts', () => {
+    state.lastLoadedAccounts = [];
+    updateAccountsToolbar();
+    expect(dom.refreshBalancesBtn.disabled).toBe(true);
   });
 });

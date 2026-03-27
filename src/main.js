@@ -5,9 +5,9 @@
 import './deps.js';
 
 import { state } from './state.js';
-import { initUI } from './ui.js';
+import { initUI, syncPanelAvailability } from './ui.js';
 import { initNetwork } from './network.js';
-import { initMonitor, initAccounts, updateSendButton } from './accounts.js';
+import { initMonitor, initAccounts, updateAccountsToolbar } from './accounts.js';
 import { initTx, populatePallets, resetExtrinsicBuilder, updateExtrinsicSendButton } from './tx.js';
 
 initUI();
@@ -15,19 +15,22 @@ initMonitor();
 
 initAccounts({
   onAccountsChanged() {
-    updateSendButton();
+    updateAccountsToolbar();
     updateExtrinsicSendButton();
+    syncPanelAvailability();
   },
 });
 
 initNetwork({
   onConnected() {
-    updateSendButton();
+    updateAccountsToolbar();
     populatePallets(state.api);
+    syncPanelAvailability();
   },
   onDisconnected() {
-    updateSendButton();
+    updateAccountsToolbar();
     resetExtrinsicBuilder();
+    syncPanelAvailability();
   },
 });
 

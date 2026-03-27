@@ -261,14 +261,13 @@ export function clearAccountsTable() {
   state.selectedAccount = null;
   state.walletExtensionKey = null;
   dom.refreshBalancesBtn.disabled = true;
-  dom.fromAddress.value = '';
   dom.loadAccountsBtn.textContent = 'Load 5 Accounts';
   if (state.accountSource === ACCOUNT_SOURCE.WALLET && dom.walletExtensionTrigger) {
     populateWalletExtensionDropdown();
   } else {
     updateWalletLoadButtonState();
   }
-  updateSendButton();
+  updateAccountsToolbar();
   onAccountsChanged();
 }
 
@@ -304,9 +303,8 @@ export function renderAccounts(accounts, animate = false) {
     `;
     tr.addEventListener('click', () => {
       state.selectedAccount = acct;
-      dom.fromAddress.value = acct.address;
       renderAccounts(state.lastLoadedAccounts);
-      updateSendButton();
+      updateAccountsToolbar();
       onAccountsChanged();
     });
     const copyBtn = tr.querySelector('.copy-btn');
@@ -339,8 +337,7 @@ export async function fetchBalances(accounts) {
   dom.refreshBalancesBtn.disabled = false;
 }
 
-export function updateSendButton() {
-  dom.sendBtn.disabled = !(state.api && state.selectedAccount && dom.toAddress.value.trim() && dom.amountInput.value);
+export function updateAccountsToolbar() {
   dom.refreshBalancesBtn.disabled = !(state.api && state.lastLoadedAccounts.length);
 }
 
@@ -422,7 +419,7 @@ export function initAccounts({ onAccountsChanged: cb }) {
       state.lastLoadedAccounts = normalized;
       state.accountsLoaded = normalized.length > 0;
       renderAccounts(normalized, true);
-      updateSendButton();
+      updateAccountsToolbar();
       if (normalized.length === 0) {
         setLedgerStatus(
           state.api
@@ -472,7 +469,7 @@ export function initAccounts({ onAccountsChanged: cb }) {
       state.accountsLoaded = true;
       dom.loadAccountsBtn.textContent = 'Load 5 More';
       setLedgerStatus(`Device ready | ${state.lastLoadedAccounts.length} accounts loaded`, 'ok');
-      updateSendButton();
+      updateAccountsToolbar();
 
       if (state.api) {
         setLedgerStatus('Fetching balances...', 'busy');
@@ -511,7 +508,7 @@ export function initAccounts({ onAccountsChanged: cb }) {
       mergeAccounts([account]);
       state.accountsLoaded = true;
       setLedgerStatus(`Device ready | ${state.lastLoadedAccounts.length} accounts loaded`, 'ok');
-      updateSendButton();
+      updateAccountsToolbar();
 
       if (state.api) {
         setLedgerStatus(`Fetching balance for account #${idx}...`, 'busy');
@@ -530,7 +527,4 @@ export function initAccounts({ onAccountsChanged: cb }) {
   dom.refreshBalancesBtn.addEventListener('click', () => {
     if (state.lastLoadedAccounts.length) fetchBalances(state.lastLoadedAccounts);
   });
-
-  dom.toAddress.addEventListener('input', updateSendButton);
-  dom.amountInput.addEventListener('input', updateSendButton);
 }

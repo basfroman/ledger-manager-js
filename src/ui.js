@@ -1,5 +1,6 @@
 import { ACCOUNT_SOURCE, COPY_FEEDBACK_MS, ICON_COPY, ICON_CHECK } from './constants.js';
 import { copyToClipboard } from './chain-utils.js';
+import { state } from './state.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -8,7 +9,6 @@ export const dom = {};
 
 export function initDomRefs() {
   Object.assign(dom, {
-    topRow: $('topRow'),
     networkPresetTrigger: $('networkPresetTrigger'),
     networkPresetDropdown: $('networkPresetDropdown'),
     customUrlWrap: $('customUrlWrap'),
@@ -34,10 +34,6 @@ export function initDomRefs() {
     accountsBody: $('accountsBody'),
     accountsTitle: $('accountsTitle'),
     refreshBalancesBtn: $('refreshBalancesBtn'),
-    fromAddress: $('fromAddress'),
-    toAddress: $('toAddress'),
-    amountInput: $('amount'),
-    sendBtn: $('sendBtn'),
     txStatusEl: $('txStatus'),
     txResultWrap: $('txResultWrap'),
     txResult: $('txResult'),
@@ -49,14 +45,32 @@ export function initDomRefs() {
     extrinsicDocs: $('extrinsicDocs'),
     extrinsicArgs: $('extrinsicArgs'),
     extrinsicSendBtn: $('extrinsicSendBtn'),
-    transferPane: $('transferPane'),
     builderPane: $('builderPane'),
-    txModeToggle: $('txModeToggle'),
     logCopyBtn: $('logCopyBtn'),
     resultCopyBtn: $('resultCopyBtn'),
     explorerLink: $('explorerLink'),
     explorerLinkLabel: $('explorerLinkLabel'),
+    sourceSection: $('sourceSection'),
+    accountsSection: $('accountsSection'),
+    txSection: $('txSection'),
   });
+}
+
+/**
+ * Source + Accounts: locked until RPC connected.
+ * Extrinsic Builder: locked until at least one account is loaded from the active source.
+ */
+export function syncPanelAvailability() {
+  const connected = Boolean(state.api);
+  const accountsReady = connected && state.lastLoadedAccounts.length > 0;
+
+  dom.sourceSection.classList.toggle('panel-locked', !connected);
+  dom.accountsSection.classList.toggle('panel-locked', !connected);
+  dom.txSection.classList.toggle('panel-locked', !accountsReady);
+
+  dom.sourceSection.setAttribute('aria-disabled', String(!connected));
+  dom.accountsSection.setAttribute('aria-disabled', String(!connected));
+  dom.txSection.setAttribute('aria-disabled', String(!accountsReady));
 }
 
 export function setLedgerStatus(text, tone) {
@@ -137,18 +151,6 @@ export function populateCustomDropdown(trigger, dropdown, items, placeholder) {
   }
   trigger.querySelector('.custom-select-label').textContent = placeholder;
   trigger.disabled = items.length === 0;
-}
-
-export function swapTopSections(swap) {
-  const slideClass = swap ? 'swap-slide-out' : 'swap-slide-back';
-  dom.topRow.classList.add(slideClass);
-  setTimeout(() => {
-    dom.topRow.querySelectorAll('section').forEach(s => { s.style.transition = 'none'; });
-    dom.topRow.classList.remove(slideClass);
-    dom.topRow.classList.toggle('swapped', swap);
-    void dom.topRow.offsetHeight;
-    dom.topRow.querySelectorAll('section').forEach(s => { s.style.transition = ''; });
-  }, 420);
 }
 
 /**
@@ -264,16 +266,6 @@ export function initUI() {
   dom.logCopyBtn.innerHTML = ICON_COPY;
   dom.resultCopyBtn.innerHTML = ICON_COPY;
 
-  dom.txModeToggle.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-mode]');
-    if (!btn) return;
-    for (const b of dom.txModeToggle.querySelectorAll('button')) {
-      b.classList.toggle('active', b === btn);
-    }
-    dom.transferPane.classList.toggle('hidden', btn.dataset.mode !== 'transfer');
-    dom.builderPane.classList.toggle('hidden', btn.dataset.mode !== 'builder');
-  });
-
   dom.logCopyBtn.addEventListener('click', async () => {
     const ok = await copyToClipboard(dom.logPanel.textContent);
     if (ok) {
@@ -289,4 +281,6 @@ export function initUI() {
       setTimeout(() => { dom.resultCopyBtn.innerHTML = ICON_COPY; }, COPY_FEEDBACK_MS);
     }
   });
+
+  syncPanelAvailability();
 }

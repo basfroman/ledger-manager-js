@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Ledger Manager — Bittensor</title>
+<title>Extrinsic Builder — Bittensor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -11,130 +11,98 @@
 </head>
 <body>
 
-<!-- Row 1: Network + Ledger -->
-<div class="top-row" id="topRow">
-  <section id="networkSection">
-    <h2>Network</h2>
-    <div class="network-fields">
-      <div>
-        <div class="custom-select" id="networkPresetWrap">
-          <button class="custom-select-trigger" id="networkPresetTrigger" type="button">
-            <span class="custom-select-label">Latent</span>
-            <span class="custom-select-url">wss://lite.sub.latent.to:443</span>
-          </button>
-          <div class="custom-select-dropdown hidden" id="networkPresetDropdown"></div>
-        </div>
-      </div>
-      <div id="customUrlWrap" class="hidden">
-        <label>Custom RPC URL</label>
-        <input id="customUrl" value="ws://127.0.0.1:9944" />
-      </div>
-      <div class="network-buttons">
-        <button class="btn-primary" id="connectBtn">Connect</button>
-        <button class="btn-secondary" id="disconnectBtn" disabled>Disconnect</button>
-      </div>
-    </div>
-    <div class="status-box status-neutral mt-12" id="networkStatus">Disconnected</div>
-  </section>
-
-  <section id="ledgerSection">
-    <div class="section-header">
-      <h2>Source</h2>
-      <div class="seg-control" id="accountSourceToggle">
-        <button type="button" class="active" data-mode="ledger">Ledger</button>
-        <button type="button" data-mode="wallet">Wallet</button>
-      </div>
-    </div>
-    <div id="ledgerOnlyWrap">
-      <div class="ledger-actions">
-        <button class="btn-primary" id="addDeviceBtn">+ Add Device</button>
-        <button class="btn-primary" id="loadAccountsBtn" disabled>Load 5 Accounts</button>
-        <div class="index-input-wrap">
-          <input id="singleAccountIndex" class="index-input" type="number" min="0" step="1" value="0" placeholder="#" />
-        </div>
-        <button class="btn-secondary" id="loadSingleAccountBtn" disabled>Load by Index</button>
-      </div>
-      <table class="mt-12">
-        <thead><tr><th>Device</th><th></th></tr></thead>
-        <tbody id="deviceListBody">
-          <tr><td colspan="2" class="text-muted">No authorized devices</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div id="walletOnlyWrap" class="hidden">
-      <label for="walletExtensionTrigger">Browser extension</label>
-      <div class="wallet-extension-row mt-8">
-        <div class="custom-select wallet-extension-select-wrap" id="walletExtensionWrap">
-          <button type="button" class="custom-select-trigger" id="walletExtensionTrigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="walletExtensionDropdown" aria-describedby="walletExtensionHint">
-            <span class="custom-select-label">— Choose extension —</span>
-          </button>
-          <div class="custom-select-dropdown hidden" id="walletExtensionDropdown" role="listbox"></div>
-        </div>
-        <button type="button" class="btn-secondary btn-sm" id="refreshExtensionsBtn">Refresh list</button>
-      </div>
-      <p class="hint text-sm mt-8" id="walletExtensionHint">Click Refresh to detect injected wallets.</p>
-      <button type="button" class="btn-primary mt-12" id="loadExtensionAccountsBtn" disabled>Authorize &amp; load accounts</button>
-      <p class="hint text-sm mt-8">
-        The page may prompt every installed Polkadot-compatible extension once; only accounts from the extension you chose are loaded.
-      </p>
-    </div>
-    <div class="status-box status-neutral mt-12" id="ledgerStatus">No device selected</div>
-  </section>
-</div>
-
-<!-- Row 2: Accounts + Extrinsic -->
-<div class="mid-row">
-  <section>
-    <h2 id="accountsTitle">Accounts</h2>
-    <div class="refresh-bar">
-      <button class="btn-secondary btn-sm" id="refreshBalancesBtn" disabled>Refresh Balances</button>
-    </div>
-    <div class="accounts-scroll">
-      <table>
-        <thead>
-          <tr><th>#</th><th>Address</th><th>Derivation Path</th><th>Balance (TAO)</th><th></th></tr>
-        </thead>
-        <tbody id="accountsBody">
-          <tr><td colspan="5" class="text-muted">No accounts loaded</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <section id="txSection">
-    <div class="section-header">
-      <h2>Extrinsic</h2>
-      <div class="seg-control" id="txModeToggle">
-        <button class="active" data-mode="transfer">Transfer</button>
-        <button data-mode="builder">Builder</button>
-      </div>
-    </div>
-
-    <div id="transferPane">
-      <div>
-        <label>From (click account above)</label>
-        <input id="fromAddress" readonly placeholder="Select an account from the list above" />
-      </div>
-      <div class="mt-8">
-        <label>To</label>
-        <input id="toAddress" placeholder="5..." />
-      </div>
-      <div class="row mt-8">
+<div class="main-workspace" id="mainWorkspace">
+  <div class="left-column" id="leftColumn">
+    <section id="networkSection">
+      <h2>Network</h2>
+      <div class="network-fields">
         <div>
-          <label>Amount (TAO)</label>
-          <input id="amount" type="number" step="0.1" min="0" placeholder="0.1" />
+          <div class="custom-select" id="networkPresetWrap">
+            <button class="custom-select-trigger" id="networkPresetTrigger" type="button">
+              <span class="custom-select-label">Latent</span>
+              <span class="custom-select-url">wss://lite.sub.latent.to:443</span>
+            </button>
+            <div class="custom-select-dropdown hidden" id="networkPresetDropdown"></div>
+          </div>
         </div>
-        <button class="btn-primary" id="sendBtn" disabled>Send</button>
+        <div id="customUrlWrap" class="hidden">
+          <label>Custom RPC URL</label>
+          <input id="customUrl" value="ws://127.0.0.1:9944" />
+        </div>
+        <div class="network-buttons">
+          <button class="btn-primary" id="connectBtn">Connect</button>
+          <button class="btn-secondary" id="disconnectBtn" disabled>Disconnect</button>
+        </div>
       </div>
-      <p class="hint">
-        Ledger Generic app requires <code>metadata-hash</code> feature enabled
-        at node compile time. Mainnet and testnet have it. For custom/local nodes: rebuild with
-        <code>--features metadata-hash</code>, otherwise transactions will
-        be rejected with <code>CannotLookup</code>.
-      </p>
-    </div>
+      <div class="status-box status-neutral" id="networkStatus">Disconnected</div>
+    </section>
 
-    <div id="builderPane" class="hidden">
+    <section id="sourceSection" class="panel-locked" aria-disabled="true">
+      <div class="section-header">
+        <h2>Source</h2>
+        <div class="seg-control" id="accountSourceToggle">
+          <button type="button" class="active" data-mode="ledger">Ledger</button>
+          <button type="button" data-mode="wallet">Wallet</button>
+        </div>
+      </div>
+      <div id="ledgerOnlyWrap">
+        <div class="ledger-actions">
+          <button class="btn-primary" id="addDeviceBtn">+ Add Device</button>
+          <button class="btn-primary" id="loadAccountsBtn" disabled>Load 5 Accounts</button>
+          <div class="index-input-wrap">
+            <input id="singleAccountIndex" class="index-input" type="number" min="0" step="1" value="0" placeholder="#" />
+          </div>
+          <button class="btn-secondary" id="loadSingleAccountBtn" disabled>Load by Index</button>
+        </div>
+        <table class="mt-12">
+          <thead><tr><th>Device</th><th></th></tr></thead>
+          <tbody id="deviceListBody">
+            <tr><td colspan="2" class="text-muted">No authorized devices</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="walletOnlyWrap" class="hidden">
+        <label for="walletExtensionTrigger">Browser extension</label>
+        <div class="wallet-extension-row mt-8">
+          <div class="custom-select wallet-extension-select-wrap" id="walletExtensionWrap">
+            <button type="button" class="custom-select-trigger" id="walletExtensionTrigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="walletExtensionDropdown" aria-describedby="walletExtensionHint">
+              <span class="custom-select-label">— Choose extension —</span>
+            </button>
+            <div class="custom-select-dropdown hidden" id="walletExtensionDropdown" role="listbox"></div>
+          </div>
+          <button type="button" class="btn-secondary btn-sm" id="refreshExtensionsBtn">Refresh list</button>
+        </div>
+        <p class="hint text-sm mt-8" id="walletExtensionHint">Click Refresh to detect injected wallets.</p>
+        <button type="button" class="btn-primary mt-12" id="loadExtensionAccountsBtn" disabled>Authorize &amp; load accounts</button>
+        <p class="hint text-sm mt-8">
+          The page may prompt every installed Polkadot-compatible extension once; only accounts from the extension you chose are loaded.
+        </p>
+      </div>
+      <div class="status-box status-neutral mt-12" id="ledgerStatus">No device selected</div>
+    </section>
+
+    <section id="accountsSection" class="panel-locked" aria-disabled="true">
+      <h2 id="accountsTitle">Accounts</h2>
+      <div class="refresh-bar">
+        <button class="btn-secondary btn-sm" id="refreshBalancesBtn" disabled>Refresh Balances</button>
+      </div>
+      <div class="accounts-scroll">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Address</th><th>Derivation Path</th><th>Balance (TAO)</th><th></th></tr>
+          </thead>
+          <tbody id="accountsBody">
+            <tr><td colspan="5" class="text-muted">No accounts loaded</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <section id="txSection" class="panel-locked" aria-disabled="true">
+    <h2>Extrinsic Builder</h2>
+
+    <div id="builderPane">
       <div class="row">
         <div>
           <label>Pallet</label>
@@ -163,12 +131,15 @@
       <p class="hint">
         Uses the account selected in Accounts. Arguments are parsed as strings;
         use JSON for complex types (arrays, objects).
+        Ledger Generic app requires <code>metadata-hash</code> enabled at node compile time
+        (mainnet/testnet have it). For custom/local nodes, rebuild with
+        <code>--features metadata-hash</code>, or signing may fail with <code>CannotLookup</code>.
       </p>
     </div>
   </section>
 </div>
 
-<!-- Row 3: Status + Log -->
+<!-- Footer: Status + Log -->
 <div class="bottom-row">
   <section>
     <h2>Status</h2>
