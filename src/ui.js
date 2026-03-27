@@ -1,4 +1,4 @@
-import { COPY_FEEDBACK_MS, ICON_COPY, ICON_CHECK } from './constants.js';
+import { ACCOUNT_SOURCE, COPY_FEEDBACK_MS, ICON_COPY, ICON_CHECK } from './constants.js';
 import { copyToClipboard } from './chain-utils.js';
 
 const $ = (id) => document.getElementById(id);
@@ -16,6 +16,15 @@ export function initDomRefs() {
     connectBtn: $('connectBtn'),
     disconnectBtn: $('disconnectBtn'),
     networkStatus: $('networkStatus'),
+    accountSourceToggle: $('accountSourceToggle'),
+    ledgerOnlyWrap: $('ledgerOnlyWrap'),
+    walletOnlyWrap: $('walletOnlyWrap'),
+    walletExtensionWrap: $('walletExtensionWrap'),
+    walletExtensionTrigger: $('walletExtensionTrigger'),
+    walletExtensionDropdown: $('walletExtensionDropdown'),
+    refreshExtensionsBtn: $('refreshExtensionsBtn'),
+    walletExtensionHint: $('walletExtensionHint'),
+    loadExtensionAccountsBtn: $('loadExtensionAccountsBtn'),
     addDeviceBtn: $('addDeviceBtn'),
     loadAccountsBtn: $('loadAccountsBtn'),
     singleAccountIndex: $('singleAccountIndex'),
@@ -94,6 +103,10 @@ export function setupCustomDropdown(trigger, dropdown, wrapId, onChange) {
     const wasHidden = dropdown.classList.contains('hidden');
     dropdown.classList.toggle('hidden');
     if (wasHidden) positionDropdown(trigger, dropdown);
+    const isOpen = !dropdown.classList.contains('hidden');
+    if (trigger.hasAttribute('aria-expanded')) {
+      trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    }
   });
   dropdown.addEventListener('click', (e) => {
     const opt = e.target.closest('.custom-select-option');
@@ -102,10 +115,14 @@ export function setupCustomDropdown(trigger, dropdown, wrapId, onChange) {
     opt.classList.add('selected');
     trigger.querySelector('.custom-select-label').textContent = opt.querySelector('.custom-select-label').textContent;
     dropdown.classList.add('hidden');
+    if (trigger.hasAttribute('aria-expanded')) trigger.setAttribute('aria-expanded', 'false');
     onChange(opt.dataset.value);
   });
   document.addEventListener('click', (e) => {
-    if (!e.target.closest(`#${wrapId}`)) dropdown.classList.add('hidden');
+    if (!e.target.closest(`#${wrapId}`)) {
+      dropdown.classList.add('hidden');
+      if (trigger.hasAttribute('aria-expanded')) trigger.setAttribute('aria-expanded', 'false');
+    }
   });
 }
 
@@ -134,6 +151,21 @@ export function swapTopSections(swap) {
   }, 420);
 }
 
+/**
+ * Parses `--accent-rgb` from CSS (comma-separated "R, G, B").
+ * @param {string} cssValue
+ * @returns {{ r: number, g: number, b: number }}
+ */
+export function parseAccentRgbTuple(cssValue) {
+  const parts = String(cssValue)
+    .split(',')
+    .map(s => parseInt(s.trim(), 10));
+  if (parts.length === 3 && parts.every(n => !Number.isNaN(n) && n >= 0 && n <= 255)) {
+    return { r: parts[0], g: parts[1], b: parts[2] };
+  }
+  return { r: 198, g: 120, b: 221 };
+}
+
 export function matrixRain() {
   const canvas = document.createElement('canvas');
   canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;pointer-events:none;opacity:1;transition:opacity 0.8s';
@@ -152,6 +184,10 @@ export function matrixRain() {
   const cols = Math.ceil(W / size);
   const drops = Array.from({ length: cols }, () => Math.random() * -40 | 0);
   const speeds = Array.from({ length: cols }, () => 0.3 + Math.random() * 0.7);
+
+  const accent = parseAccentRgbTuple(
+    getComputedStyle(document.body).getPropertyValue('--accent-rgb').trim(),
+  );
 
   const DURATION = 2800;
   const FADE_AT = 1800;
@@ -179,11 +215,16 @@ export function matrixRain() {
       const bright = Math.random();
       if (bright > 0.92) {
         ctx.fillStyle = '#fff';
-        ctx.shadowColor = '#6ec85c';
+        ctx.shadowColor = `rgb(${accent.r},${accent.g},${accent.b})`;
         ctx.shadowBlur = 12;
       } else {
         const g = 100 + (Math.random() * 155) | 0;
-        ctx.fillStyle = `rgba(${30 + (Math.random() * 40) | 0}, ${g}, ${40 + (Math.random() * 30) | 0}, ${0.6 + Math.random() * 0.4})`;
+        const jr = 30 + (Math.random() * 40) | 0;
+        const jb = 40 + (Math.random() * 30) | 0;
+        const r = Math.round(jr * 0.35 + accent.r * 0.65);
+        const g2 = Math.round(g * 0.4 + accent.g * 0.6);
+        const b = Math.round(jb * 0.35 + accent.b * 0.65);
+        ctx.fillStyle = `rgba(${r}, ${g2}, ${b}, ${0.6 + Math.random() * 0.4})`;
         ctx.shadowColor = 'transparent';
         ctx.shadowBlur = 0;
       }
@@ -202,6 +243,20 @@ export function matrixRain() {
   }
 
   requestAnimationFrame(draw);
+}
+
+/** @param {(mode: string) => void} onSelectMode `data-mode` value: ACCOUNT_SOURCE.LEDGER | ACCOUNT_SOURCE.WALLET */
+export function initAccountSourceToggle(onSelectMode) {
+  dom.accountSourceToggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-mode]');
+    if (!btn) return;
+    const mode = btn.dataset.mode;
+    if (mode !== ACCOUNT_SOURCE.LEDGER && mode !== ACCOUNT_SOURCE.WALLET) return;
+    for (const b of dom.accountSourceToggle.querySelectorAll('button')) {
+      b.classList.toggle('active', b === btn);
+    }
+    onSelectMode(mode);
+  });
 }
 
 export function initUI() {

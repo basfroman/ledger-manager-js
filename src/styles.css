@@ -10,12 +10,25 @@
   --accent-hover: #d48ce6;
   --accent-dim: rgba(198, 120, 221, 0.10);
   --accent-glow: rgba(198, 120, 221, 0.20);
+  /* Comma-separated R,G,B — keep in sync with --accent (canvas matrixRain reads this). */
+  --accent-rgb: 198, 120, 221;
   --green: #6ec85c;
   --red: #e40046;
   --yellow: #ffd60a;
   --radius: 6px;
   --radius-lg: 10px;
   --mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', 'Menlo', monospace;
+  /* Same stacking as all custom-select dropdowns (fixed overlay) */
+  --z-dropdown: 9999;
+}
+
+/* Wallet mode: orange accent (set via body[data-account-source] from JS). */
+body[data-account-source="wallet"] {
+  --accent: #e8943c;
+  --accent-hover: #f0a650;
+  --accent-dim: rgba(232, 148, 60, 0.10);
+  --accent-glow: rgba(232, 148, 60, 0.20);
+  --accent-rgb: 232, 148, 60;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -208,7 +221,7 @@ button:disabled { opacity: 0.3; cursor: not-allowed; }
 .status-ok { background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent-glow); }
 .status-err { background: rgba(255, 69, 58, 0.08); color: var(--red); border: 1px solid rgba(255, 69, 58, 0.15); }
 .status-warn { background: rgba(255, 214, 10, 0.06); color: var(--yellow); border: 1px solid rgba(255, 214, 10, 0.12); }
-.status-busy { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(198, 120, 221, 0.2); animation: pulse 2s ease-in-out infinite; }
+.status-busy { background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent-glow); animation: pulse 2s ease-in-out infinite; }
 
 /* ── Tables ── */
 
@@ -341,6 +354,18 @@ tr[data-selectable]:hover { background: var(--surface2); cursor: pointer; }
 .seg-control button:not(.active):hover {
   background: var(--surface2);
   color: var(--text);
+}
+
+.wallet-extension-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.wallet-extension-row .wallet-extension-select-wrap {
+  flex: 1;
+  min-width: 0;
 }
 
 .section-header {
@@ -515,7 +540,7 @@ tr[data-selectable]:hover { background: var(--surface2); cursor: pointer; }
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  z-index: 9999;
+  z-index: var(--z-dropdown);
   max-height: none;
   overflow-y: auto;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);

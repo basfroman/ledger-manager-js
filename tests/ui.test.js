@@ -12,6 +12,7 @@ import {
   populateCustomDropdown,
   positionDropdown,
   swapTopSections,
+  parseAccentRgbTuple,
   dom,
 } from '../src/ui.js';
 
@@ -78,6 +79,17 @@ describe('positionDropdown', () => {
     expect(dom.networkPresetDropdown.style.top).toBe('104px');
     expect(dom.networkPresetDropdown.style.left).toBe('10px');
     expect(dom.networkPresetDropdown.style.width).toBe('200px');
+  });
+});
+
+describe('parseAccentRgbTuple', () => {
+  it('parses comma-separated RGB', () => {
+    expect(parseAccentRgbTuple('232, 148, 60')).toEqual({ r: 232, g: 148, b: 60 });
+  });
+
+  it('returns ledger fallback on invalid input', () => {
+    expect(parseAccentRgbTuple('')).toEqual({ r: 198, g: 120, b: 221 });
+    expect(parseAccentRgbTuple('not-a-color')).toEqual({ r: 198, g: 120, b: 221 });
   });
 });
 

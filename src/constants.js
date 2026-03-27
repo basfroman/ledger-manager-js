@@ -1,3 +1,23 @@
+/** Where accounts are loaded from and how transactions are signed. */
+export const ACCOUNT_SOURCE = Object.freeze({
+  LEDGER: 'ledger',
+  WALLET: 'wallet',
+});
+
+/** Passed to `web3Enable` — appears in extension authorization UI. */
+export const EXTENSION_DAPP_ORIGIN = 'ledger-tool';
+
+/** Friendly labels for `window.injectedWeb3` keys (fallback: raw key). */
+export const EXTENSION_DISPLAY_LABELS = Object.freeze({
+  'polkadot-js': 'Polkadot.js',
+  'subwallet-js': 'SubWallet',
+  'talisman': 'Talisman',
+  'enkrypt': 'Enkrypt',
+});
+
+export const MSG_LEDGER_NO_METADATA_HASH =
+  'This network does not support CheckMetadataHash. Ledger signing is impossible.';
+
 export const SS58_PREFIX = 42;
 export const SLIP44 = 0x00000162;
 export const CHAIN = 'bittensor';

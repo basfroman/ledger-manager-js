@@ -91,7 +91,9 @@ export function initNetwork({ onConnected, onDisconnected }) {
 
       let statusLine = `Connected: ${chain} v${runtime.specVersion} | Block #${blockNum}`;
       if (devChain) statusLine += ' | DEV CHAIN (metadata hash will be broken)';
-      if (!hasMetaHash) statusLine += ' | WARNING: Ledger signing not possible without CheckMetadataHash';
+      if (!hasMetaHash) {
+        statusLine += ' | WARNING: Ledger needs CheckMetadataHash; Wallet (extension) may still work';
+      }
 
       setStatus(dom.networkStatus, statusLine, hasMetaHash && !devChain ? 'ok' : 'warn');
       dom.connectBtn.disabled = true;

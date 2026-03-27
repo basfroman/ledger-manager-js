@@ -1,3 +1,4 @@
+import { web3Accounts, web3Enable } from '@polkadot/extension-dapp';
 import { copyToClipboard, truncAddr } from './chain-utils.js';
 import {
   LedgerManager,
@@ -5,10 +6,44 @@ import {
   classifyLedgerError,
   ledgerErrorMessage,
 } from './ledger-manager.js';
-import { CHAIN, COPY_FEEDBACK_MS, ICON_COPY, ICON_CHECK, RAO_PER_TAO, SLIP44, SS58_PREFIX } from './constants.js';
-import { LedgerGeneric } from './deps.js';
+import {
+  ACCOUNT_SOURCE,
+  CHAIN,
+  COPY_FEEDBACK_MS,
+  EXTENSION_DAPP_ORIGIN,
+  EXTENSION_DISPLAY_LABELS,
+  ICON_COPY,
+  ICON_CHECK,
+  RAO_PER_TAO,
+  SLIP44,
+  SS58_PREFIX,
+} from './constants.js';
+import { LedgerGeneric, u8aToHex } from './deps.js';
 import { state } from './state.js';
-import { dom, setLedgerStatus } from './ui.js';
+import { dom, initAccountSourceToggle, setLedgerStatus, setupCustomDropdown } from './ui.js';
+
+/** Keys present in `window.injectedWeb3` (extensions that injected into the page). */
+export function listInjectedExtensionKeys(win = typeof window !== 'undefined' ? window : globalThis) {
+  return Object.keys(win.injectedWeb3 || {});
+}
+
+/**
+ * Match user-picked injected key to an enabled extension `name` from `web3Enable` result.
+ * @param {Array<{ name: string }>} enabled
+ * @param {string} selectedKey
+ */
+export function resolveEnabledExtensionName(enabled, selectedKey) {
+  if (!selectedKey || !Array.isArray(enabled) || enabled.length === 0) return null;
+  const exact = enabled.find(e => e.name === selectedKey);
+  if (exact) return exact.name;
+  const lower = selectedKey.toLowerCase();
+  const flex = enabled.find(e => e.name && (
+    e.name.toLowerCase() === lower
+    || selectedKey.includes(e.name)
+    || e.name.includes(selectedKey)
+  ));
+  return flex?.name ?? null;
+}
 
 /** Pure merge + sort by accountIndex (testable). */
 export function mergeAccountsData(existing, newAccounts) {
@@ -20,6 +55,27 @@ export function mergeAccountsData(existing, newAccounts) {
   }
   out.sort((a, b) => a.accountIndex - b.accountIndex);
   return out;
+}
+
+/**
+ * Maps extension-dapp accounts into the table row shape (testable).
+ * @param {import('@polkadot/extension-inject/types').InjectedAccountWithMeta} account
+ */
+export function normalizeExtensionAccount(account, rowIndex) {
+  const meta = account.meta || {};
+  const label = meta.name || 'Account';
+  const src = meta.source || 'extension';
+  return {
+    address: account.address,
+    accountIndex: rowIndex,
+    addressOffset: 0,
+    derivationPath: `${src} · ${label}`,
+    accountSource: ACCOUNT_SOURCE.WALLET,
+  };
+}
+
+export function normalizeExtensionAccounts(injectedAccounts) {
+  return injectedAccounts.map((a, i) => normalizeExtensionAccount(a, i));
 }
 
 export let monitor = null;
@@ -37,8 +93,7 @@ export function initMonitor() {
       switch (status) {
         case LEDGER_STATUS.IDLE:
           setLedgerStatus('No device selected', 'neutral');
-          dom.loadAccountsBtn.disabled = true;
-          dom.loadSingleAccountBtn.disabled = true;
+          syncLedgerLoadButtonsFromMonitor();
           break;
         case LEDGER_STATUS.NO_DEVICE:
           setLedgerStatus('Ledger is not connected. Plug in your device via USB.', 'warn');
@@ -55,11 +110,16 @@ export function initMonitor() {
         case LEDGER_STATUS.READY: {
           const ver = detail.appVersion || '?';
           const firstReady = detail.previousStatus !== LEDGER_STATUS.READY;
-          dom.loadAccountsBtn.disabled = false;
-          dom.loadSingleAccountBtn.disabled = false;
+          syncLedgerLoadButtonsFromMonitor();
           const suffix = state.accountsLoaded ? ` | ${state.lastLoadedAccounts.length} accounts loaded` : '';
           setLedgerStatus(`Device ready — Polkadot app v${ver}${suffix}`, 'ok');
-          if (firstReady && !state.accountsLoaded) dom.loadAccountsBtn.click();
+          if (
+            state.accountSource === ACCOUNT_SOURCE.LEDGER
+            && firstReady
+            && !state.accountsLoaded
+          ) {
+            dom.loadAccountsBtn.click();
+          }
           break;
         }
       }
@@ -71,11 +131,81 @@ export function initMonitor() {
   monitor.start();
 }
 
+function syncLedgerLoadButtonsFromMonitor() {
+  if (state.accountSource !== ACCOUNT_SOURCE.LEDGER || !monitor) {
+    dom.loadAccountsBtn.disabled = true;
+    dom.loadSingleAccountBtn.disabled = true;
+    return;
+  }
+  const ready = monitor.status === LEDGER_STATUS.READY;
+  dom.loadAccountsBtn.disabled = !ready;
+  dom.loadSingleAccountBtn.disabled = !ready;
+}
+
 function onDeviceBecameNotReady() {
+  if (state.accountSource !== ACCOUNT_SOURCE.LEDGER) {
+    syncLedgerLoadButtonsFromMonitor();
+    return;
+  }
   state.accountsLoaded = false;
-  dom.loadAccountsBtn.disabled = true;
-  dom.loadSingleAccountBtn.disabled = true;
+  syncLedgerLoadButtonsFromMonitor();
   clearAccountsTable();
+}
+
+const WALLET_EXT_PLACEHOLDER_CHOOSE = '— Choose extension —';
+const WALLET_EXT_PLACEHOLDER_EMPTY = '— No extensions detected —';
+
+function populateWalletExtensionDropdown() {
+  const keys = listInjectedExtensionKeys();
+  dom.walletExtensionDropdown.innerHTML = '';
+  for (const key of [...keys].sort()) {
+    const row = document.createElement('div');
+    row.className = 'custom-select-option';
+    row.dataset.value = key;
+    row.setAttribute('role', 'option');
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'custom-select-label';
+    labelSpan.textContent = EXTENSION_DISPLAY_LABELS[key] || key;
+    const keySpan = document.createElement('span');
+    keySpan.className = 'custom-select-url';
+    keySpan.textContent = key;
+    row.append(labelSpan, keySpan);
+    dom.walletExtensionDropdown.appendChild(row);
+  }
+  const ph = keys.length ? WALLET_EXT_PLACEHOLDER_CHOOSE : WALLET_EXT_PLACEHOLDER_EMPTY;
+  dom.walletExtensionTrigger.querySelector('.custom-select-label').textContent = ph;
+  dom.walletExtensionTrigger.disabled = keys.length === 0;
+  state.walletExtensionKey = null;
+  dom.walletExtensionHint.textContent = keys.length
+    ? `${keys.length} wallet extension(s) detected on this page. Pick one, then authorize.`
+    : 'No Polkadot-compatible extension found. Install a wallet (e.g. Polkadot.js, SubWallet), refresh this page, and click Refresh list.';
+  updateWalletLoadButtonState();
+}
+
+function updateWalletLoadButtonState() {
+  if (!dom.loadExtensionAccountsBtn) return;
+  const hasPick = Boolean(state.walletExtensionKey);
+  dom.loadExtensionAccountsBtn.disabled = state.accountSource !== ACCOUNT_SOURCE.WALLET || !hasPick;
+}
+
+/** Sets `body[data-account-source]` for CSS theme (Ledger vs Wallet accent). */
+export function syncAccountSourceThemeToBody() {
+  document.body.dataset.accountSource = state.accountSource;
+}
+
+/** Show Ledger USB UI vs extension-only UI; sync button disabled state. */
+export function applyAccountSourceUI() {
+  const ledger = state.accountSource === ACCOUNT_SOURCE.LEDGER;
+  dom.ledgerOnlyWrap.classList.toggle('hidden', !ledger);
+  dom.walletOnlyWrap.classList.toggle('hidden', ledger);
+  if (ledger) {
+    syncLedgerLoadButtonsFromMonitor();
+  } else {
+    dom.loadAccountsBtn.disabled = true;
+    dom.loadSingleAccountBtn.disabled = true;
+    populateWalletExtensionDropdown();
+  }
+  syncAccountSourceThemeToBody();
 }
 
 export function renderDeviceList(devices) {
@@ -129,9 +259,15 @@ export function clearAccountsTable() {
   dom.accountsBody.innerHTML = '<tr><td colspan="5" class="text-muted">No accounts loaded</td></tr>';
   state.lastLoadedAccounts = [];
   state.selectedAccount = null;
+  state.walletExtensionKey = null;
   dom.refreshBalancesBtn.disabled = true;
   dom.fromAddress.value = '';
   dom.loadAccountsBtn.textContent = 'Load 5 Accounts';
+  if (state.accountSource === ACCOUNT_SOURCE.WALLET && dom.walletExtensionTrigger) {
+    populateWalletExtensionDropdown();
+  } else {
+    updateWalletLoadButtonState();
+  }
   updateSendButton();
   onAccountsChanged();
 }
@@ -154,10 +290,13 @@ export function renderAccounts(accounts, animate = false) {
     }
     if (state.selectedAccount?.address === acct.address) tr.classList.add('selected');
     const balStr = acct.balance != null ? acct.balance.toFixed(4) : '...';
+    const pathCol = acct.accountSource === ACCOUNT_SOURCE.WALLET
+      ? (acct.derivationPath || '—')
+      : (acct.derivationPath || `m/44'/${SLIP44}'/${acct.accountIndex}'/0'/0'`);
     tr.innerHTML = `
       <td>${acct.accountIndex}</td>
       <td title="${acct.address}">${truncAddr(acct.address)}</td>
-      <td>${acct.derivationPath || `m/44'/${SLIP44}'/${acct.accountIndex}'/0'/0'`}</td>
+      <td>${pathCol}</td>
       <td>${balStr}</td>
       <td class="text-right">
         <button class="copy-btn" title="Copy address" data-copy="${acct.address}">${ICON_COPY}</button>
@@ -208,6 +347,26 @@ export function updateSendButton() {
 export function initAccounts({ onAccountsChanged: cb }) {
   onAccountsChanged = cb;
 
+  initAccountSourceToggle((mode) => {
+    const next = mode === ACCOUNT_SOURCE.WALLET ? ACCOUNT_SOURCE.WALLET : ACCOUNT_SOURCE.LEDGER;
+    if (next === state.accountSource) return;
+    state.accountSource = next;
+    clearAccountsTable();
+    applyAccountSourceUI();
+    onAccountsChanged();
+  });
+  applyAccountSourceUI();
+
+  setupCustomDropdown(
+    dom.walletExtensionTrigger,
+    dom.walletExtensionDropdown,
+    'walletExtensionWrap',
+    (value) => {
+      state.walletExtensionKey = value || null;
+      updateWalletLoadButtonState();
+    },
+  );
+
   dom.addDeviceBtn.addEventListener('click', async () => {
     dom.addDeviceBtn.disabled = true;
     try {
@@ -221,7 +380,74 @@ export function initAccounts({ onAccountsChanged: cb }) {
     }
   });
 
+  dom.refreshExtensionsBtn.addEventListener('click', () => {
+    if (state.accountSource !== ACCOUNT_SOURCE.WALLET) return;
+    populateWalletExtensionDropdown();
+  });
+
+  dom.loadExtensionAccountsBtn.addEventListener('click', async () => {
+    if (state.accountSource !== ACCOUNT_SOURCE.WALLET) return;
+    const selectedKey = state.walletExtensionKey;
+    if (!selectedKey) {
+      setLedgerStatus('Choose a browser extension first.', 'err');
+      return;
+    }
+    dom.loadExtensionAccountsBtn.disabled = true;
+    setLedgerStatus('Requesting extension access...', 'busy');
+    try {
+      const enabled = await web3Enable(EXTENSION_DAPP_ORIGIN);
+      const sourceName = resolveEnabledExtensionName(enabled, selectedKey);
+      if (!sourceName) {
+        setLedgerStatus(
+          `Could not connect "${selectedKey}". Enabled: ${enabled.map(e => e.name).join(', ') || 'none'}.`,
+          'err',
+        );
+        return;
+      }
+      state.walletExtensionKey = selectedKey;
+      const all = await web3Accounts({ extensions: [sourceName] });
+      let filtered = all;
+      if (state.api) {
+        const gh = state.api.genesisHash.toHex().replace(/^0x/i, '');
+        filtered = all.filter((a) => {
+          const g = a.meta?.genesisHash;
+          if (g == null || g === '') return true;
+          const aHex = typeof g === 'string'
+            ? g.replace(/^0x/i, '')
+            : (g.toHex?.() ?? u8aToHex(g)).replace(/^0x/i, '');
+          return aHex === gh;
+        });
+      }
+      const normalized = normalizeExtensionAccounts(filtered);
+      state.lastLoadedAccounts = normalized;
+      state.accountsLoaded = normalized.length > 0;
+      renderAccounts(normalized, true);
+      updateSendButton();
+      if (normalized.length === 0) {
+        setLedgerStatus(
+          state.api
+            ? 'No extension accounts for this network genesis (or none authorized).'
+            : 'No accounts from extensions. Connect to a network first to filter by chain, or authorize accounts.',
+          'warn',
+        );
+      } else {
+        setLedgerStatus(`${normalized.length} extension account(s) loaded`, 'ok');
+        if (state.api) {
+          setLedgerStatus('Fetching balances...', 'busy');
+          await fetchBalances(state.lastLoadedAccounts);
+          setLedgerStatus(`${normalized.length} extension account(s) loaded`, 'ok');
+        }
+      }
+      onAccountsChanged();
+    } catch (err) {
+      setLedgerStatus(err.message || String(err), 'err');
+    } finally {
+      updateWalletLoadButtonState();
+    }
+  });
+
   dom.loadAccountsBtn.addEventListener('click', async () => {
+    if (state.accountSource !== ACCOUNT_SOURCE.LEDGER) return;
     if (monitor.status !== LEDGER_STATUS.READY) {
       setLedgerStatus('Device is not ready.', 'err');
       return;
@@ -263,6 +489,7 @@ export function initAccounts({ onAccountsChanged: cb }) {
   });
 
   dom.loadSingleAccountBtn.addEventListener('click', async () => {
+    if (state.accountSource !== ACCOUNT_SOURCE.LEDGER) return;
     if (monitor.status !== LEDGER_STATUS.READY) {
       setLedgerStatus('Device is not ready.', 'err');
       return;

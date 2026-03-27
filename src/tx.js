@@ -15,7 +15,8 @@ import {
   ledgerErrorMessage,
   normalizeLedgerSignature,
 } from './ledger-manager.js';
-import { MERKLE_DECIMALS, MERKLE_TOKEN } from './constants.js';
+import { ACCOUNT_SOURCE, MERKLE_DECIMALS, MERKLE_TOKEN, MSG_LEDGER_NO_METADATA_HASH } from './constants.js';
+import { web3FromAddress } from '@polkadot/extension-dapp';
 import { u8aToHex, merkleizeMetadata } from './deps.js';
 import { monitor, updateSendButton } from './accounts.js';
 import { getRpcUrl } from './network.js';
@@ -33,6 +34,12 @@ import {
 function handleTxError(err) {
   log(`ERROR: ${err.message}`);
   log(`Stack: ${err.stack}`);
+  if (state.accountSource === ACCOUNT_SOURCE.WALLET) {
+    setTxStatus(`Error: ${err.message}`, 'err');
+    dom.txResultWrap.classList.remove('hidden');
+    dom.txResult.textContent = `${err.stack ?? err.message}`;
+    return;
+  }
   const code = classifyLedgerError(err);
   if (code !== LEDGER_ERROR.UNKNOWN) {
     setTxStatus(ledgerErrorMessage(code, err), 'err');
@@ -118,7 +125,7 @@ function createLedgerSigner(apiInst, merkleized, accountIndex, addressOffset) {
   };
 }
 
-async function signAndSendTx(tx, fromAddr, accountIndex, addressOffset) {
+async function signAndSendLedger(tx, fromAddr, accountIndex, addressOffset) {
   setTxStatus('Building transaction...', 'busy');
   log(`call hex: ${tx.method.toHex()}`);
   log(`call hash: ${tx.method.hash.toHex()}`);
@@ -151,7 +158,28 @@ async function signAndSendTx(tx, fromAddr, accountIndex, addressOffset) {
   log('═══ SIGNING ═══');
   setTxStatus('Confirm on Ledger device...', 'warn');
   const signedTx = await tx.signAsync(fromAddr, signOptions);
+  return broadcastSignedTx(signedTx);
+}
 
+async function signAndSendExtension(tx, address) {
+  setTxStatus('Building transaction...', 'busy');
+  log(`call hex: ${tx.method.toHex()}`);
+  log(`call hash: ${tx.method.hash.toHex()}`);
+  log('');
+  log('═══ EXTENSION SIGNING ═══');
+  setTxStatus('Confirm in browser extension...', 'warn');
+  const injector = await web3FromAddress(address);
+  if (!injector?.signer) {
+    throw new Error('No extension signer for this address. Load extension accounts and approve access.');
+  }
+  const signedTx = await tx.signAsync(address, {
+    signer: injector.signer,
+    withSignedTransaction: true,
+  });
+  return broadcastSignedTx(signedTx);
+}
+
+async function broadcastSignedTx(signedTx) {
   const txHash = signedTx.hash.toHex();
   const fullHex = signedTx.toHex();
   log(`signedTx hash: ${txHash}`);
@@ -440,14 +468,19 @@ export function initTx() {
     dom.txResult.textContent = '';
     dom.explorerLink.classList.add('hidden');
     const { hasMetaHash, devChain } = logChainContext();
-    if (!hasMetaHash) {
-      log('FATAL: chain has no CheckMetadataHash');
-      setTxStatus('This network does not support CheckMetadataHash. Ledger signing is impossible.', 'err');
-      dom.sendBtn.disabled = false;
-      return;
-    }
-    if (devChain) {
-      log('WARNING: dev chain detected (Unit/0)');
+    if (state.accountSource === ACCOUNT_SOURCE.LEDGER) {
+      if (!hasMetaHash) {
+        log('FATAL: chain has no CheckMetadataHash');
+        setTxStatus(MSG_LEDGER_NO_METADATA_HASH, 'err');
+        dom.sendBtn.disabled = false;
+        return;
+      }
+      if (devChain) {
+        log('WARNING: dev chain detected (Unit/0)');
+      }
+    } else {
+      log(`Wallet mode: CheckMetadataHash in runtime: ${hasMetaHash} (extension uses standard signing)`);
+      if (devChain) log('WARNING: dev chain detected (Unit/0)');
     }
     log('');
     log('═══ TRANSFER ═══');
@@ -456,7 +489,11 @@ export function initTx() {
     log(`amount: ${taoAmount} TAO = ${amountRao.toString()} RAO`);
     try {
       const tx = state.api.tx.balances.transferKeepAlive(to, amountRao);
-      await signAndSendTx(tx, fromAddr, accountIndex, addressOffset);
+      if (state.accountSource === ACCOUNT_SOURCE.WALLET) {
+        await signAndSendExtension(tx, fromAddr);
+      } else {
+        await signAndSendLedger(tx, fromAddr, accountIndex, addressOffset);
+      }
     } catch (err) {
       handleTxError(err);
     } finally {
@@ -481,14 +518,19 @@ export function initTx() {
 
     const { hasMetaHash, devChain } = logChainContext();
 
-    if (!hasMetaHash) {
-      log('FATAL: chain has no CheckMetadataHash');
-      setTxStatus('This network does not support CheckMetadataHash. Ledger signing is impossible.', 'err');
-      dom.extrinsicSendBtn.disabled = false;
-      return;
-    }
-    if (devChain) {
-      log('WARNING: dev chain detected');
+    if (state.accountSource === ACCOUNT_SOURCE.LEDGER) {
+      if (!hasMetaHash) {
+        log('FATAL: chain has no CheckMetadataHash');
+        setTxStatus(MSG_LEDGER_NO_METADATA_HASH, 'err');
+        dom.extrinsicSendBtn.disabled = false;
+        return;
+      }
+      if (devChain) {
+        log('WARNING: dev chain detected');
+      }
+    } else {
+      log(`Wallet mode: CheckMetadataHash in runtime: ${hasMetaHash} (extension uses standard signing)`);
+      if (devChain) log('WARNING: dev chain detected');
     }
 
     try {
@@ -499,7 +541,11 @@ export function initTx() {
       log(`args: ${JSON.stringify(args)}`);
 
       const tx = state.api.tx[pallet][method](...args);
-      await signAndSendTx(tx, fromAddr, accountIndex, addressOffset);
+      if (state.accountSource === ACCOUNT_SOURCE.WALLET) {
+        await signAndSendExtension(tx, fromAddr);
+      } else {
+        await signAndSendLedger(tx, fromAddr, accountIndex, addressOffset);
+      }
     } catch (err) {
       handleTxError(err);
     } finally {

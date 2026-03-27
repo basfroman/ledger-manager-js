@@ -38,21 +38,46 @@
   </section>
 
   <section id="ledgerSection">
-    <h2>Ledger</h2>
-    <div class="ledger-actions">
-      <button class="btn-primary" id="addDeviceBtn">+ Add Device</button>
-      <button class="btn-primary" id="loadAccountsBtn" disabled>Load 5 Accounts</button>
-      <div class="index-input-wrap">
-        <input id="singleAccountIndex" class="index-input" type="number" min="0" step="1" value="0" placeholder="#" />
+    <div class="section-header">
+      <h2>Source</h2>
+      <div class="seg-control" id="accountSourceToggle">
+        <button type="button" class="active" data-mode="ledger">Ledger</button>
+        <button type="button" data-mode="wallet">Wallet</button>
       </div>
-      <button class="btn-secondary" id="loadSingleAccountBtn" disabled>Load by Index</button>
     </div>
-    <table class="mt-12">
-      <thead><tr><th>Device</th><th></th></tr></thead>
-      <tbody id="deviceListBody">
-        <tr><td colspan="2" class="text-muted">No authorized devices</td></tr>
-      </tbody>
-    </table>
+    <div id="ledgerOnlyWrap">
+      <div class="ledger-actions">
+        <button class="btn-primary" id="addDeviceBtn">+ Add Device</button>
+        <button class="btn-primary" id="loadAccountsBtn" disabled>Load 5 Accounts</button>
+        <div class="index-input-wrap">
+          <input id="singleAccountIndex" class="index-input" type="number" min="0" step="1" value="0" placeholder="#" />
+        </div>
+        <button class="btn-secondary" id="loadSingleAccountBtn" disabled>Load by Index</button>
+      </div>
+      <table class="mt-12">
+        <thead><tr><th>Device</th><th></th></tr></thead>
+        <tbody id="deviceListBody">
+          <tr><td colspan="2" class="text-muted">No authorized devices</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div id="walletOnlyWrap" class="hidden">
+      <label for="walletExtensionTrigger">Browser extension</label>
+      <div class="wallet-extension-row mt-8">
+        <div class="custom-select wallet-extension-select-wrap" id="walletExtensionWrap">
+          <button type="button" class="custom-select-trigger" id="walletExtensionTrigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="walletExtensionDropdown" aria-describedby="walletExtensionHint">
+            <span class="custom-select-label">— Choose extension —</span>
+          </button>
+          <div class="custom-select-dropdown hidden" id="walletExtensionDropdown" role="listbox"></div>
+        </div>
+        <button type="button" class="btn-secondary btn-sm" id="refreshExtensionsBtn">Refresh list</button>
+      </div>
+      <p class="hint text-sm mt-8" id="walletExtensionHint">Click Refresh to detect injected wallets.</p>
+      <button type="button" class="btn-primary mt-12" id="loadExtensionAccountsBtn" disabled>Authorize &amp; load accounts</button>
+      <p class="hint text-sm mt-8">
+        The page may prompt every installed Polkadot-compatible extension once; only accounts from the extension you chose are loaded.
+      </p>
+    </div>
     <div class="status-box status-neutral mt-12" id="ledgerStatus">No device selected</div>
   </section>
 </div>

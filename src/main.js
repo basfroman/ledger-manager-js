@@ -1,6 +1,6 @@
 // Ledger + Bittensor signing page.
-// mode=1 (CheckMetadataHash) is ALWAYS ON when signing with Ledger.
-// Metadata is capped at V15 — see Talisman issues #2180 / #2183.
+// Ledger: mode=1 (CheckMetadataHash) + merkle metadata proof (see Talisman #2180 / #2183).
+// Wallet: browser extension via @polkadot/extension-dapp (standard signAsync, no merkle path here).
 
 import './deps.js';
 
