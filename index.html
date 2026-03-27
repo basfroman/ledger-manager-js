@@ -51,9 +51,13 @@
 
 <div id="appBody" class="app-body">
   <nav id="navRail" class="nav-rail" role="tablist" aria-label="Main navigation">
-    <button type="button" class="nav-rail-btn active" role="tab" data-route="compose" aria-selected="true" title="Compose">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-      <span>Compose</span>
+    <button type="button" class="nav-rail-btn active" role="tab" data-route="explorer" aria-selected="true" title="Blocks">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      <span>Blocks</span>
+    </button>
+    <button type="button" class="nav-rail-btn" role="tab" data-route="compose" aria-selected="false" title="Execute Extrinsic">
+      <svg width="20" height="20" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M24 16 L10 32 L24 48"/><path d="M40 16 L54 32 L40 48"/><circle cx="32" cy="32" r="3.5" fill="currentColor" stroke="none"/></svg>
+      <span>Exec</span>
     </button>
     <button type="button" class="nav-rail-btn" role="tab" data-route="dataHub" aria-selected="false" title="Data Hub">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
@@ -71,7 +75,7 @@
 
   <main id="mainCanvas" class="main-canvas">
     <!-- Route: Compose -->
-    <div id="routeCompose" role="tabpanel">
+    <div id="routeCompose" class="hidden" role="tabpanel">
       <div id="builderPane">
         <div class="row">
           <div>
@@ -100,13 +104,6 @@
         </div>
         <div class="text-sm text-muted mt-8 hidden" id="feeEstimate"></div>
         <div id="preflightChecklist" class="mt-8"></div>
-        <p class="hint">
-          Uses the account selected in Accounts. Arguments are parsed as strings;
-          use JSON for complex types (arrays, objects).
-          Ledger Generic app requires <code>metadata-hash</code> enabled at node compile time
-          (mainnet/testnet have it). For custom/local nodes, rebuild with
-          <code>--features metadata-hash</code>, or signing may fail with <code>CannotLookup</code>.
-        </p>
       </div>
       <div class="status-box status-neutral mt-12" id="txStatus">Idle</div>
       <div class="mt-12 hidden" id="txResultWrap">
@@ -257,15 +254,44 @@
       </section>
     </div>
 
+    <!-- Route: Explorer -->
+    <div id="routeExplorer" role="tabpanel">
+      <div class="explorer-split">
+        <div class="explorer-list-pane">
+          <div class="explorer-toolbar">
+            <input id="explorerSearchInput" class="explorer-search-input" placeholder="Block # or hash..." />
+            <button id="explorerSearchBtn" class="btn-primary btn-sm" disabled>Go</button>
+            <button id="explorerLiveBtn" class="btn-secondary btn-sm" disabled>Live</button>
+          </div>
+          <div class="explorer-block-list" id="explorerBlockList">
+            <div class="explorer-placeholder">Connect to a node to explore blocks</div>
+          </div>
+        </div>
+        <div class="explorer-detail-pane" id="explorerDetailPane">
+          <div class="explorer-placeholder">Select a block from the list</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Route: Diagnostics -->
-    <div id="routeDiagnostics" class="hidden" role="tabpanel">
+    <div id="routeDiagnostics" class="hidden diag-layout" role="tabpanel">
       <h2>Diagnostics</h2>
       <div id="diagnosticsCard"></div>
-      <section id="logSection" class="mt-8">
+      <details class="diag-notes mt-8">
+        <summary>Signing &amp; Ledger Notes</summary>
+        <p class="hint mt-8">
+          Exec uses the account selected in Accounts. Arguments are parsed as strings;
+          use JSON for complex types (arrays, objects).
+          Ledger Generic app requires <code>metadata-hash</code> enabled at node compile time
+          (mainnet/testnet have it). For custom/local nodes, rebuild with
+          <code>--features metadata-hash</code>, or signing may fail with <code>CannotLookup</code>.
+        </p>
+      </details>
+      <section id="logSection" class="mt-8 diag-log-section">
         <div class="section-header">
           <h2>Raw Log</h2>
         </div>
-        <div class="log-wrap">
+        <div class="log-wrap diag-log-wrap">
           <button class="log-copy-btn" id="logCopyBtn" title="Copy log"></button>
           <pre class="result-block log-panel" id="logPanel"></pre>
         </div>

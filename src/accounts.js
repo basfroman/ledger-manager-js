@@ -16,12 +16,13 @@ import {
   ICON_COPY,
   ICON_CHECK,
   RAO_PER_TAO,
+  ROUTES,
   SLIP44,
   SS58_PREFIX,
 } from './constants.js';
 import { LedgerGeneric, u8aToHex } from './deps.js';
 import { state } from './state.js';
-import { dom, initAccountSourceToggle, setLedgerStatus, setupCustomDropdown } from './ui.js';
+import { dom, initAccountSourceToggle, setActiveRoute, setLedgerStatus, setupCustomDropdown } from './ui.js';
 
 /** Keys present in `window.injectedWeb3` (extensions that injected into the page). */
 export function listInjectedExtensionKeys(win = typeof window !== 'undefined' ? window : globalThis) {
@@ -498,9 +499,16 @@ export function initAccounts({ onAccountsChanged: cb }) {
   initAccountSourceToggle((mode) => {
     const next = mode === ACCOUNT_SOURCE.WALLET ? ACCOUNT_SOURCE.WALLET : ACCOUNT_SOURCE.LEDGER;
     if (next === state.accountSource) return;
+
+    const hadAccount = Boolean(state.selectedAccount);
     state.accountSource = next;
-    clearAccountsTable();
     applyAccountSourceUI();
+
+    if (!hadAccount) {
+      clearAccountsTable();
+      setActiveRoute(ROUTES.ACCOUNTS);
+    }
+
     onAccountsChanged();
   });
   applyAccountSourceUI();

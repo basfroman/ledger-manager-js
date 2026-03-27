@@ -45,6 +45,7 @@ export const ROUTES = Object.freeze({
   COMPOSE: 'compose',
   DATA_HUB: 'dataHub',
   ACCOUNTS: 'accounts',
+  EXPLORER: 'explorer',
   DIAGNOSTICS: 'diagnostics',
 });
 
@@ -52,8 +53,10 @@ export const ROUTE_TO_DOM_ID = Object.freeze({
   [ROUTES.COMPOSE]: 'routeCompose',
   [ROUTES.DATA_HUB]: 'routeDataHub',
   [ROUTES.ACCOUNTS]: 'routeAccounts',
+  [ROUTES.EXPLORER]: 'routeExplorer',
   [ROUTES.DIAGNOSTICS]: 'routeDiagnostics',
 });
 
 export const MAX_TIMELINE_EVENTS = 500;
 export const MAX_DRAFTS = 50;
+export const MAX_EXPLORER_BLOCKS = 200;

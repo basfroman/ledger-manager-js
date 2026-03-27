@@ -30,13 +30,14 @@ export function mountAppShell() {
 </div>
 <div id="appBody" class="app-body">
   <nav id="navRail" class="nav-rail" role="tablist">
-    <button type="button" class="nav-rail-btn active" role="tab" data-route="compose" aria-selected="true"><span>Compose</span></button>
+    <button type="button" class="nav-rail-btn active" role="tab" data-route="explorer" aria-selected="true"><span>Explorer</span></button>
+    <button type="button" class="nav-rail-btn" role="tab" data-route="compose" aria-selected="false"><span>Exec</span></button>
     <button type="button" class="nav-rail-btn" role="tab" data-route="dataHub" aria-selected="false"><span>Data</span></button>
     <button type="button" class="nav-rail-btn" role="tab" data-route="accounts" aria-selected="false"><span>Accounts</span></button>
     <button type="button" class="nav-rail-btn" role="tab" data-route="diagnostics" aria-selected="false"><span>Debug</span></button>
   </nav>
   <main id="mainCanvas" class="main-canvas">
-    <div id="routeCompose" role="tabpanel">
+    <div id="routeCompose" class="hidden" role="tabpanel">
       <div id="builderPane">
         <div class="custom-select" id="palletSelectWrap">
           <button class="custom-select-trigger" id="palletSelectTrigger" type="button"><span class="custom-select-label"></span></button>
@@ -112,6 +113,19 @@ export function mountAppShell() {
         <button id="refreshBalancesBtn"></button>
         <div class="accounts-scroll"><table><tbody id="accountsBody"></tbody></table></div>
       </section>
+    </div>
+    <div id="routeExplorer" role="tabpanel">
+      <div class="explorer-split">
+        <div class="explorer-list-pane">
+          <div class="explorer-toolbar">
+            <input id="explorerSearchInput" />
+            <button id="explorerSearchBtn"></button>
+            <button id="explorerLiveBtn"></button>
+          </div>
+          <div id="explorerBlockList"></div>
+        </div>
+        <div id="explorerDetailPane"></div>
+      </div>
     </div>
     <div id="routeDiagnostics" class="hidden" role="tabpanel">
       <div id="diagnosticsCard"></div>

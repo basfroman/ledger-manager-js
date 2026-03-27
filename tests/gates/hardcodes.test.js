@@ -50,11 +50,12 @@ describe('Gate 8 — Hardcode Control', () => {
     }
   });
 
-  it('MAX_TIMELINE_EVENTS and MAX_DRAFTS are defined only in constants.js', () => {
+  it('MAX_TIMELINE_EVENTS, MAX_DRAFTS, and MAX_EXPLORER_BLOCKS are defined only in constants.js', () => {
     const files = getSrcFiles(['constants.js']);
     for (const file of files) {
       expect(file.content, `${file.name} should not redefine MAX_TIMELINE_EVENTS`).not.toMatch(/MAX_TIMELINE_EVENTS\s*=\s*\d/);
       expect(file.content, `${file.name} should not redefine MAX_DRAFTS`).not.toMatch(/MAX_DRAFTS\s*=\s*\d/);
+      expect(file.content, `${file.name} should not redefine MAX_EXPLORER_BLOCKS`).not.toMatch(/MAX_EXPLORER_BLOCKS\s*=\s*\d/);
     }
   });
 

@@ -15,8 +15,12 @@ export const state = {
   qStorageSelectValue: '',
   cPalletSelectValue: '',
   cConstantSelectValue: '',
-  activeRoute: ROUTES.COMPOSE,
+  activeRoute: ROUTES.EXPLORER,
   preflightChecks: [],
   timelineEvents: [],
   drafts: [],
+  explorerBlocks: [],
+  explorerSelectedHash: null,
+  explorerLive: true,
+  explorerUnsub: null,
 };

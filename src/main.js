@@ -11,11 +11,13 @@ import { initConstants, populateConstantPallets, resetConstantsViewer } from './
 import { buildPaletteIndex, initPalette } from './palette.js';
 import { collectDiagnostics, renderDiagnosticsDOM } from './session-diagnostics.js';
 import { initDrafts } from './drafts.js';
+import { initBlockExplorer, activateExplorer, deactivateExplorer } from './block-explorer.js';
 
 initUI();
 initPalette();
 initMonitor();
 initDrafts();
+initBlockExplorer();
 
 initAccounts({
   onAccountsChanged() {
@@ -38,6 +40,7 @@ initNetwork({
     syncPanelAvailability();
     renderTimeline();
     renderDiagnosticsDOM(collectDiagnostics(state), dom.diagnosticsCard);
+    activateExplorer();
     if (!state.accountsLoaded && state.activeRoute === ROUTES.COMPOSE) {
       setActiveRoute(ROUTES.ACCOUNTS);
     }
@@ -52,6 +55,7 @@ initNetwork({
     syncPanelAvailability();
     renderTimeline();
     dom.diagnosticsCard.innerHTML = '';
+    deactivateExplorer();
     setActiveRoute(ROUTES.COMPOSE);
   },
 });

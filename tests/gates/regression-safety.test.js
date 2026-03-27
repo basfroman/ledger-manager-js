@@ -55,8 +55,8 @@ describe('Gate 9/6 — populateCustomDropdown escaping', () => {
 
 describe('Gate 9/6 — setActiveRoute coherence', () => {
   it('only one route panel is visible at a time', () => {
-    const routes = ['compose', 'dataHub', 'accounts', 'diagnostics'];
-    const domIds = ['routeCompose', 'routeDataHub', 'routeAccounts', 'routeDiagnostics'];
+    const routes = ['compose', 'dataHub', 'accounts', 'explorer', 'diagnostics'];
+    const domIds = ['routeCompose', 'routeDataHub', 'routeAccounts', 'routeExplorer', 'routeDiagnostics'];
     for (const route of routes) {
       setActiveRoute(route);
       const visible = domIds.filter(id => !dom[id].classList.contains('hidden'));
