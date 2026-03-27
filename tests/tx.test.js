@@ -25,9 +25,11 @@ beforeEach(() => {
 });
 
 describe('createArgInput', () => {
-  it('returns select for bool', () => {
+  it('returns custom select for bool', () => {
     const el = createArgInput({ typeName: 'bool', name: 'f', type: 0 });
-    expect(el.tagName).toBe('SELECT');
+    expect(el.querySelector('.custom-select')).toBeTruthy();
+    expect(el.querySelector('input[type="hidden"]')?.value).toBe('false');
+    expect(el.querySelector('input[type="hidden"]')?.dataset.argName).toBe('f');
   });
 
   it('returns textarea for bytes', () => {

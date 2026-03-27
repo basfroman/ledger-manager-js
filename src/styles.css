@@ -413,6 +413,7 @@ tr[data-selectable]:hover { background: var(--surface2); cursor: pointer; }
 
 .arg-field { margin-bottom: 8px; }
 .arg-field label { font-size: 0.8rem; }
+.arg-bool-field .custom-select { width: 100%; }
 .arg-type { color: var(--accent); font-size: 0.75rem; font-family: var(--mono); opacity: 0.8; }
 .doc-block {
   font-size: 0.82rem;

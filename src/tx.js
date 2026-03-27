@@ -322,14 +322,57 @@ export function resetExtrinsicBuilder() {
   dom.extrinsicSendBtn.disabled = true;
 }
 
+let extrinsicArgBoolSeq = 0;
+
+/** Bool args: same custom-select UI as pallet/method (not native select). */
+function createBoolArgCustomSelect(arg, tn) {
+  const wrapId = `extrinsicArgBool${extrinsicArgBoolSeq++}`;
+  const root = document.createElement('div');
+  root.className = 'arg-bool-field';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'custom-select';
+  wrap.id = wrapId;
+
+  const trigger = document.createElement('button');
+  trigger.type = 'button';
+  trigger.className = 'custom-select-trigger';
+  trigger.innerHTML = '<span class="custom-select-label">false</span>';
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'custom-select-dropdown hidden';
+  for (const val of ['false', 'true']) {
+    const opt = document.createElement('div');
+    opt.className = 'custom-select-option';
+    if (val === 'false') opt.classList.add('selected');
+    opt.dataset.value = val;
+    opt.innerHTML = `<span class="custom-select-label">${val}</span>`;
+    dropdown.appendChild(opt);
+  }
+
+  const hidden = document.createElement('input');
+  hidden.type = 'hidden';
+  hidden.value = 'false';
+  hidden.dataset.argName = arg.name.toString();
+  hidden.dataset.argType = tn;
+
+  wrap.append(trigger, dropdown);
+  root.append(wrap, hidden);
+
+  setupCustomDropdown(trigger, dropdown, wrapId, (value) => {
+    hidden.value = value;
+    updateExtrinsicSendButton();
+  });
+
+  return root;
+}
+
 export function createArgInput(arg) {
-  const typeName = getArgTypeName(arg, state.api.registry).toLowerCase();
+  const tn = getArgTypeName(arg, state.api.registry);
+  const typeName = tn.toLowerCase();
 
   if (typeName === 'bool') {
-    const sel = document.createElement('select');
-    sel.innerHTML = '<option value="false">false</option><option value="true">true</option>';
-    sel.addEventListener('change', updateExtrinsicSendButton);
-    return sel;
+    return createBoolArgCustomSelect(arg, tn);
   }
 
   if (/bytes|vec<u8>/.test(typeName)) {
@@ -338,6 +381,8 @@ export function createArgInput(arg) {
     ta.rows = 2;
     ta.placeholder = '0x... (hex) or raw text';
     ta.addEventListener('input', updateExtrinsicSendButton);
+    ta.dataset.argName = arg.name.toString();
+    ta.dataset.argType = tn;
     return ta;
   }
 
@@ -353,9 +398,11 @@ export function createArgInput(arg) {
   } else if (/h256|hash/i.test(typeName)) {
     input.placeholder = '0x...';
   } else {
-    input.placeholder = `${getArgTypeName(arg, state.api.registry)} (string or JSON)`;
+    input.placeholder = `${tn} (string or JSON)`;
   }
 
+  input.dataset.argName = arg.name.toString();
+  input.dataset.argType = tn;
   return input;
 }
 
@@ -432,8 +479,6 @@ function onMethodChanged(method) {
     div.appendChild(label);
 
     const input = createArgInput(arg);
-    input.dataset.argName = arg.name.toString();
-    input.dataset.argType = tn;
     div.appendChild(input);
 
     dom.extrinsicArgs.appendChild(div);
