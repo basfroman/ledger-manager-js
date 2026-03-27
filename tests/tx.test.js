@@ -33,19 +33,20 @@ describe('updateExtrinsicSendButton', () => {
     expect(dom.feeEstimateBtn.disabled).toBe(false);
   });
 
-  it('shows signing bar when account selected', () => {
+  it('enables buttons when all conditions met', () => {
     state.selectedAccount = { address: '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY' };
     state.palletSelectValue = 'balances';
     state.methodSelectValue = 'transfer_keep_alive';
     dom.extrinsicArgs.innerHTML = '';
     updateExtrinsicSendButton();
-    expect(dom.signingAccountBar.classList.contains('hidden')).toBe(false);
-    expect(dom.signingAddr.textContent).toContain('...');
+    expect(dom.extrinsicSendBtn.disabled).toBe(false);
+    expect(dom.feeEstimateBtn.disabled).toBe(false);
   });
 
-  it('hides signing bar when no account', () => {
+  it('disables buttons when no account', () => {
     state.selectedAccount = null;
     updateExtrinsicSendButton();
-    expect(dom.signingAccountBar.classList.contains('hidden')).toBe(true);
+    expect(dom.extrinsicSendBtn.disabled).toBe(true);
+    expect(dom.feeEstimateBtn.disabled).toBe(true);
   });
 });

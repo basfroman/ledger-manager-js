@@ -21,6 +21,8 @@ import { u8aToHex, merkleizeMetadata } from './deps.js';
 import { monitor } from './accounts.js';
 import { getRpcUrl } from './network.js';
 import { state } from './state.js';
+import { computePreflight, renderPreflightDOM } from './preflight.js';
+import { pushTimelineEvent } from './timeline.js';
 import {
   dom,
   log,
@@ -29,25 +31,29 @@ import {
   populateCustomDropdown,
   setupCustomDropdown,
   setTxStatus,
+  renderTimeline,
 } from './ui.js';
 
-function handleTxError(err) {
-  log(`ERROR: ${err.message}`);
-  log(`Stack: ${err.stack}`);
+export function handleTxError(err) {
+  const error = err instanceof Error ? err : new Error(err != null ? String(err) : 'Unknown error');
+  log(`ERROR: ${error.message}`);
+  log(`Stack: ${error.stack}`);
+  pushTimelineEvent('error', `TX Error: ${error.message}`);
+  renderTimeline();
   if (state.accountSource === ACCOUNT_SOURCE.WALLET) {
-    setTxStatus(`Error: ${err.message}`, 'err');
+    setTxStatus(`Error: ${error.message}`, 'err');
     dom.txResultWrap.classList.remove('hidden');
-    dom.txResult.textContent = `${err.stack ?? err.message}`;
+    dom.txResult.textContent = `${error.stack ?? error.message}`;
     return;
   }
-  const code = classifyLedgerError(err);
+  const code = classifyLedgerError(error);
   if (code !== LEDGER_ERROR.UNKNOWN) {
-    setTxStatus(ledgerErrorMessage(code, err), 'err');
+    setTxStatus(ledgerErrorMessage(code, error), 'err');
   } else {
-    setTxStatus(`Error: ${err.message}`, 'err');
+    setTxStatus(`Error: ${error.message}`, 'err');
   }
   dom.txResultWrap.classList.remove('hidden');
-  dom.txResult.textContent = `${err.stack ?? err.message}`;
+  dom.txResult.textContent = `${error.stack ?? error.message}`;
 }
 
 function logChainContext() {
@@ -258,6 +264,12 @@ async function broadcastSignedTx(signedTx) {
       } else if (status.isDropped || status.isInvalid || status.isUsurped) {
         log(`Dropped/Invalid: ${status.type}`);
         finish(() => reject(new Error(`Transaction dropped: ${status.type}`)));
+      } else if (status.isRetracted) {
+        log(`Retracted: block retracted, tx may be re-included`);
+        finish(() => reject(new Error('Transaction retracted: block was retracted by the network')));
+      } else if (status.isFinalityTimeout) {
+        log(`FinalityTimeout: finality could not be achieved`);
+        finish(() => reject(new Error('Transaction finality timeout: the network could not finalize the block')));
       }
     }).catch(err => {
       log(`send() error: ${err.message}`);
@@ -300,6 +312,8 @@ async function broadcastSignedTx(signedTx) {
     dom.explorerLink.classList.add('hidden');
   }
 
+  pushTimelineEvent('success', `TX Success: ${result.txHash.slice(0, 18)}… in block #${result.blockNumber}`, '', explorer);
+  renderTimeline();
   matrixRain();
 
   return result;
@@ -331,7 +345,6 @@ export function resetExtrinsicBuilder() {
   dom.feeEstimateBtn.disabled = true;
   dom.feeEstimate.textContent = '';
   dom.feeEstimate.classList.add('hidden');
-  dom.signingAccountBar.classList.add('hidden');
 }
 
 export function collectArgs() {
@@ -339,12 +352,6 @@ export function collectArgs() {
 }
 
 export function updateExtrinsicSendButton() {
-  if (state.selectedAccount) {
-    dom.signingAddr.textContent = truncAddr(state.selectedAccount.address);
-    dom.signingAccountBar.classList.remove('hidden');
-  } else {
-    dom.signingAccountBar.classList.add('hidden');
-  }
   if (!state.api || !state.selectedAccount || !state.palletSelectValue || !state.methodSelectValue) {
     dom.extrinsicSendBtn.disabled = true;
     dom.feeEstimateBtn.disabled = true;
@@ -397,6 +404,7 @@ function onMethodChanged(method) {
   if (args.length === 0) {
     dom.extrinsicArgs.innerHTML = '<div class="text-muted text-sm">No arguments required</div>';
     updateExtrinsicSendButton();
+    renderPreflight();
     return;
   }
 
@@ -409,12 +417,22 @@ function onMethodChanged(method) {
     label.innerHTML = `${arg.name.toString()} <span class="arg-type">${tn}</span>`;
     div.appendChild(label);
 
-    const input = createArgInput(arg, state.api.registry, updateExtrinsicSendButton);
+    const input = createArgInput(arg, state.api.registry, () => {
+      updateExtrinsicSendButton();
+      renderPreflight();
+    });
     div.appendChild(input);
 
     dom.extrinsicArgs.appendChild(div);
   }
   updateExtrinsicSendButton();
+  renderPreflight();
+}
+
+function renderPreflight() {
+  const checks = computePreflight(state, monitor);
+  state.preflightChecks = checks;
+  renderPreflightDOM(checks, dom.preflightChecklist);
 }
 
 /** Programmatic selection for command palette / deep links. */

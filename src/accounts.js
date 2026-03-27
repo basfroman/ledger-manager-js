@@ -1,5 +1,6 @@
 import { web3Accounts, web3Enable } from '@polkadot/extension-dapp';
 import { copyToClipboard, truncAddr } from './chain-utils.js';
+import { pushTimelineEvent } from './timeline.js';
 import {
   LedgerManager,
   LEDGER_STATUS,
@@ -205,6 +206,10 @@ export function applyAccountSourceUI() {
     dom.loadSingleAccountBtn.disabled = true;
     populateWalletExtensionDropdown();
   }
+  const pathHeader = document.getElementById('pathColHeader');
+  if (pathHeader) {
+    pathHeader.textContent = ledger ? 'Derivation Path' : 'Wallet / Key name';
+  }
   syncAccountSourceThemeToBody();
 }
 
@@ -260,6 +265,7 @@ export function clearAccountsTable() {
   state.lastLoadedAccounts = [];
   state.selectedAccount = null;
   state.walletExtensionKey = null;
+  state.accountsLoaded = false;
   dom.refreshBalancesBtn.disabled = true;
   dom.loadAccountsBtn.textContent = 'Load 5 Accounts';
   if (state.accountSource === ACCOUNT_SOURCE.WALLET && dom.walletExtensionTrigger) {
@@ -341,6 +347,151 @@ export function updateAccountsToolbar() {
   dom.refreshBalancesBtn.disabled = !(state.api && state.lastLoadedAccounts.length);
 }
 
+async function handleLoadExtensionAccounts() {
+  if (state.accountSource !== ACCOUNT_SOURCE.WALLET) return;
+  const selectedKey = state.walletExtensionKey;
+  if (!selectedKey) {
+    setLedgerStatus('Choose a browser extension first.', 'err');
+    return;
+  }
+  dom.loadExtensionAccountsBtn.disabled = true;
+  setLedgerStatus('Requesting extension access...', 'busy');
+  try {
+    const enabled = await web3Enable(EXTENSION_DAPP_ORIGIN);
+    const sourceName = resolveEnabledExtensionName(enabled, selectedKey);
+    if (!sourceName) {
+      setLedgerStatus(
+        `Could not connect "${selectedKey}". Enabled: ${enabled.map(e => e.name).join(', ') || 'none'}.`,
+        'err',
+      );
+      return;
+    }
+    state.walletExtensionKey = selectedKey;
+    const all = await web3Accounts({ extensions: [sourceName] });
+    let filtered = all;
+    if (state.api) {
+      const gh = state.api.genesisHash.toHex().replace(/^0x/i, '');
+      filtered = all.filter((a) => {
+        const g = a.meta?.genesisHash;
+        if (g == null || g === '') return true;
+        const aHex = typeof g === 'string'
+          ? g.replace(/^0x/i, '')
+          : (g.toHex?.() ?? u8aToHex(g)).replace(/^0x/i, '');
+        return aHex === gh;
+      });
+    }
+    const normalized = normalizeExtensionAccounts(filtered);
+    state.lastLoadedAccounts = normalized;
+    state.accountsLoaded = normalized.length > 0;
+    renderAccounts(normalized, true);
+    updateAccountsToolbar();
+    if (normalized.length > 0) pushTimelineEvent('info', `${normalized.length} extension account(s) loaded`);
+    if (normalized.length === 0) {
+      setLedgerStatus(
+        state.api
+          ? 'No extension accounts for this network genesis (or none authorized).'
+          : 'No accounts from extensions. Connect to a network first to filter by chain, or authorize accounts.',
+        'warn',
+      );
+    } else {
+      setLedgerStatus(`${normalized.length} extension account(s) loaded`, 'ok');
+      if (state.api) {
+        setLedgerStatus('Fetching balances...', 'busy');
+        await fetchBalances(state.lastLoadedAccounts);
+        setLedgerStatus(`${normalized.length} extension account(s) loaded`, 'ok');
+      }
+    }
+    onAccountsChanged();
+  } catch (err) {
+    setLedgerStatus(err.message || String(err), 'err');
+  } finally {
+    updateWalletLoadButtonState();
+  }
+}
+
+async function handleLoadLedgerBatch() {
+  if (state.accountSource !== ACCOUNT_SOURCE.LEDGER) return;
+  if (monitor.status !== LEDGER_STATUS.READY) {
+    setLedgerStatus('Device is not ready.', 'err');
+    return;
+  }
+
+  dom.loadAccountsBtn.disabled = true;
+  dom.loadSingleAccountBtn.disabled = true;
+  setLedgerStatus('Loading accounts from Ledger...', 'busy');
+
+  try {
+    const startIndex = state.lastLoadedAccounts.length > 0
+      ? state.lastLoadedAccounts[state.lastLoadedAccounts.length - 1].accountIndex + 1
+      : 0;
+    const newAccounts = await monitor.getAccounts(5, {
+      startIndex,
+      onProgress({ current, total }) {
+        setLedgerStatus(`Fetching account ${current}/${total} from Ledger...`, 'busy');
+      },
+    });
+
+    mergeAccounts(newAccounts);
+    state.accountsLoaded = true;
+    dom.loadAccountsBtn.textContent = 'Load 5 More';
+    setLedgerStatus(`Device ready | ${state.lastLoadedAccounts.length} accounts loaded`, 'ok');
+    pushTimelineEvent('info', `${newAccounts.length} Ledger account(s) loaded`);
+    updateAccountsToolbar();
+
+    if (state.api) {
+      setLedgerStatus('Fetching balances...', 'busy');
+      await fetchBalances(state.lastLoadedAccounts);
+      setLedgerStatus(`Device ready | ${state.lastLoadedAccounts.length} accounts loaded`, 'ok');
+    }
+  } catch (err) {
+    const code = classifyLedgerError(err);
+    setLedgerStatus(ledgerErrorMessage(code, err), 'err');
+  } finally {
+    dom.loadAccountsBtn.disabled = false;
+    dom.loadSingleAccountBtn.disabled = false;
+  }
+}
+
+async function handleLoadSingleLedgerAccount() {
+  if (state.accountSource !== ACCOUNT_SOURCE.LEDGER) return;
+  if (monitor.status !== LEDGER_STATUS.READY) {
+    setLedgerStatus('Device is not ready.', 'err');
+    return;
+  }
+
+  const idx = parseInt(dom.singleAccountIndex.value, 10);
+  if (isNaN(idx) || idx < 0) {
+    setLedgerStatus('Enter a valid account index (0 or higher).', 'err');
+    return;
+  }
+
+  dom.loadAccountsBtn.disabled = true;
+  dom.loadSingleAccountBtn.disabled = true;
+  setLedgerStatus(`Fetching account #${idx} from Ledger...`, 'busy');
+
+  try {
+    const account = await monitor.getAccount(idx);
+
+    mergeAccounts([account]);
+    state.accountsLoaded = true;
+    setLedgerStatus(`Device ready | ${state.lastLoadedAccounts.length} accounts loaded`, 'ok');
+    pushTimelineEvent('info', `Ledger account #${idx} loaded`);
+    updateAccountsToolbar();
+
+    if (state.api) {
+      setLedgerStatus(`Fetching balance for account #${idx}...`, 'busy');
+      await fetchBalances([account]);
+      setLedgerStatus(`Device ready | ${state.lastLoadedAccounts.length} accounts loaded`, 'ok');
+    }
+  } catch (err) {
+    const code = classifyLedgerError(err);
+    setLedgerStatus(ledgerErrorMessage(code, err), 'err');
+  } finally {
+    dom.loadAccountsBtn.disabled = false;
+    dom.loadSingleAccountBtn.disabled = false;
+  }
+}
+
 export function initAccounts({ onAccountsChanged: cb }) {
   onAccountsChanged = cb;
 
@@ -382,147 +533,9 @@ export function initAccounts({ onAccountsChanged: cb }) {
     populateWalletExtensionDropdown();
   });
 
-  dom.loadExtensionAccountsBtn.addEventListener('click', async () => {
-    if (state.accountSource !== ACCOUNT_SOURCE.WALLET) return;
-    const selectedKey = state.walletExtensionKey;
-    if (!selectedKey) {
-      setLedgerStatus('Choose a browser extension first.', 'err');
-      return;
-    }
-    dom.loadExtensionAccountsBtn.disabled = true;
-    setLedgerStatus('Requesting extension access...', 'busy');
-    try {
-      const enabled = await web3Enable(EXTENSION_DAPP_ORIGIN);
-      const sourceName = resolveEnabledExtensionName(enabled, selectedKey);
-      if (!sourceName) {
-        setLedgerStatus(
-          `Could not connect "${selectedKey}". Enabled: ${enabled.map(e => e.name).join(', ') || 'none'}.`,
-          'err',
-        );
-        return;
-      }
-      state.walletExtensionKey = selectedKey;
-      const all = await web3Accounts({ extensions: [sourceName] });
-      let filtered = all;
-      if (state.api) {
-        const gh = state.api.genesisHash.toHex().replace(/^0x/i, '');
-        filtered = all.filter((a) => {
-          const g = a.meta?.genesisHash;
-          if (g == null || g === '') return true;
-          const aHex = typeof g === 'string'
-            ? g.replace(/^0x/i, '')
-            : (g.toHex?.() ?? u8aToHex(g)).replace(/^0x/i, '');
-          return aHex === gh;
-        });
-      }
-      const normalized = normalizeExtensionAccounts(filtered);
-      state.lastLoadedAccounts = normalized;
-      state.accountsLoaded = normalized.length > 0;
-      renderAccounts(normalized, true);
-      updateAccountsToolbar();
-      if (normalized.length === 0) {
-        setLedgerStatus(
-          state.api
-            ? 'No extension accounts for this network genesis (or none authorized).'
-            : 'No accounts from extensions. Connect to a network first to filter by chain, or authorize accounts.',
-          'warn',
-        );
-      } else {
-        setLedgerStatus(`${normalized.length} extension account(s) loaded`, 'ok');
-        if (state.api) {
-          setLedgerStatus('Fetching balances...', 'busy');
-          await fetchBalances(state.lastLoadedAccounts);
-          setLedgerStatus(`${normalized.length} extension account(s) loaded`, 'ok');
-        }
-      }
-      onAccountsChanged();
-    } catch (err) {
-      setLedgerStatus(err.message || String(err), 'err');
-    } finally {
-      updateWalletLoadButtonState();
-    }
-  });
-
-  dom.loadAccountsBtn.addEventListener('click', async () => {
-    if (state.accountSource !== ACCOUNT_SOURCE.LEDGER) return;
-    if (monitor.status !== LEDGER_STATUS.READY) {
-      setLedgerStatus('Device is not ready.', 'err');
-      return;
-    }
-
-    dom.loadAccountsBtn.disabled = true;
-    dom.loadSingleAccountBtn.disabled = true;
-    setLedgerStatus('Loading accounts from Ledger...', 'busy');
-
-    try {
-      const startIndex = state.lastLoadedAccounts.length > 0
-        ? state.lastLoadedAccounts[state.lastLoadedAccounts.length - 1].accountIndex + 1
-        : 0;
-      const newAccounts = await monitor.getAccounts(5, {
-        startIndex,
-        onProgress({ current, total }) {
-          setLedgerStatus(`Fetching account ${current}/${total} from Ledger...`, 'busy');
-        },
-      });
-
-      mergeAccounts(newAccounts);
-      state.accountsLoaded = true;
-      dom.loadAccountsBtn.textContent = 'Load 5 More';
-      setLedgerStatus(`Device ready | ${state.lastLoadedAccounts.length} accounts loaded`, 'ok');
-      updateAccountsToolbar();
-
-      if (state.api) {
-        setLedgerStatus('Fetching balances...', 'busy');
-        await fetchBalances(state.lastLoadedAccounts);
-        setLedgerStatus(`Device ready | ${state.lastLoadedAccounts.length} accounts loaded`, 'ok');
-      }
-    } catch (err) {
-      const code = classifyLedgerError(err);
-      setLedgerStatus(ledgerErrorMessage(code, err), 'err');
-    } finally {
-      dom.loadAccountsBtn.disabled = false;
-      dom.loadSingleAccountBtn.disabled = false;
-    }
-  });
-
-  dom.loadSingleAccountBtn.addEventListener('click', async () => {
-    if (state.accountSource !== ACCOUNT_SOURCE.LEDGER) return;
-    if (monitor.status !== LEDGER_STATUS.READY) {
-      setLedgerStatus('Device is not ready.', 'err');
-      return;
-    }
-
-    const idx = parseInt(dom.singleAccountIndex.value, 10);
-    if (isNaN(idx) || idx < 0) {
-      setLedgerStatus('Enter a valid account index (0 or higher).', 'err');
-      return;
-    }
-
-    dom.loadAccountsBtn.disabled = true;
-    dom.loadSingleAccountBtn.disabled = true;
-    setLedgerStatus(`Fetching account #${idx} from Ledger...`, 'busy');
-
-    try {
-      const account = await monitor.getAccount(idx);
-
-      mergeAccounts([account]);
-      state.accountsLoaded = true;
-      setLedgerStatus(`Device ready | ${state.lastLoadedAccounts.length} accounts loaded`, 'ok');
-      updateAccountsToolbar();
-
-      if (state.api) {
-        setLedgerStatus(`Fetching balance for account #${idx}...`, 'busy');
-        await fetchBalances([account]);
-        setLedgerStatus(`Device ready | ${state.lastLoadedAccounts.length} accounts loaded`, 'ok');
-      }
-    } catch (err) {
-      const code = classifyLedgerError(err);
-      setLedgerStatus(ledgerErrorMessage(code, err), 'err');
-    } finally {
-      dom.loadAccountsBtn.disabled = false;
-      dom.loadSingleAccountBtn.disabled = false;
-    }
-  });
+  dom.loadExtensionAccountsBtn.addEventListener('click', handleLoadExtensionAccounts);
+  dom.loadAccountsBtn.addEventListener('click', handleLoadLedgerBatch);
+  dom.loadSingleAccountBtn.addEventListener('click', handleLoadSingleLedgerAccount);
 
   dom.refreshBalancesBtn.addEventListener('click', () => {
     if (state.lastLoadedAccounts.length) fetchBalances(state.lastLoadedAccounts);

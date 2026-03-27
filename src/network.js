@@ -2,6 +2,7 @@ import { chainSupportsMetadataHash, getChainToken, isDevChain } from './chain-ut
 import { NETWORK_PRESETS } from './constants.js';
 import { state } from './state.js';
 import { dom, positionDropdown, setStatus } from './ui.js';
+import { pushTimelineEvent } from './timeline.js';
 import { ApiPromise, WsProvider } from './deps.js';
 
 export function getRpcUrl() {
@@ -61,11 +62,9 @@ export function initNetwork({ onConnected, onDisconnected }) {
 
     dom.customUrlWrap.classList.toggle('hidden', value !== 'custom');
     dom.networkPresetDropdown.classList.add('hidden');
-  });
 
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('#networkPresetWrap')) {
-      dom.networkPresetDropdown.classList.add('hidden');
+    if (state.api && value !== 'custom') {
+      dom.connectBtn.click();
     }
   });
 
@@ -94,12 +93,15 @@ export function initNetwork({ onConnected, onDisconnected }) {
         statusLine += ' | WARNING: Ledger needs CheckMetadataHash; Wallet (extension) may still work';
       }
 
-      setStatus(dom.networkStatus, statusLine, hasMetaHash && !devChain ? 'ok' : 'warn');
+      dom.networkStatus.textContent = '';
       const token = getChainToken(state.api);
       dom.chainInfoBar.textContent = `Subtensor spec. ${runtime.specVersion} | Block #${blockNum} | ${token}`;
-      dom.appHeader.classList.remove('hidden');
       dom.connectBtn.disabled = true;
       dom.disconnectBtn.disabled = false;
+      dom.disconnectBtn.classList.add('btn-active');
+      dom.networkPresetTrigger.disabled = true;
+      dom.customUrl.disabled = true;
+      pushTimelineEvent('info', `Connected to ${url}`);
       onConnected();
     } catch (err) {
       setStatus(dom.networkStatus, `Connection failed: ${err.message}`, 'err');
@@ -113,9 +115,12 @@ export function initNetwork({ onConnected, onDisconnected }) {
     state.api = null;
     dom.connectBtn.disabled = false;
     dom.disconnectBtn.disabled = true;
-    setStatus(dom.networkStatus, 'Disconnected', 'neutral');
-    dom.appHeader.classList.add('hidden');
+    dom.disconnectBtn.classList.remove('btn-active');
+    dom.networkPresetTrigger.disabled = false;
+    dom.customUrl.disabled = false;
+    dom.networkStatus.textContent = '';
     dom.chainInfoBar.textContent = '';
+    pushTimelineEvent('info', 'Disconnected');
     onDisconnected();
   });
 }

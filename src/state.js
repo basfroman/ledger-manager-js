@@ -1,4 +1,4 @@
-import { ACCOUNT_SOURCE, NETWORK_PRESETS } from './constants.js';
+import { ACCOUNT_SOURCE, NETWORK_PRESETS, ROUTES } from './constants.js';
 
 export const state = {
   api: null,
@@ -15,4 +15,8 @@ export const state = {
   qStorageSelectValue: '',
   cPalletSelectValue: '',
   cConstantSelectValue: '',
+  activeRoute: ROUTES.COMPOSE,
+  preflightChecks: [],
+  timelineEvents: [],
+  drafts: [],
 };

@@ -40,3 +40,20 @@ export const NETWORK_PRESETS = [
   { label: 'Testnet', url: 'wss://test.finney.opentensor.ai:443' },
   { label: 'Custom URL', url: 'custom' },
 ];
+
+export const ROUTES = Object.freeze({
+  COMPOSE: 'compose',
+  DATA_HUB: 'dataHub',
+  ACCOUNTS: 'accounts',
+  DIAGNOSTICS: 'diagnostics',
+});
+
+export const ROUTE_TO_DOM_ID = Object.freeze({
+  [ROUTES.COMPOSE]: 'routeCompose',
+  [ROUTES.DATA_HUB]: 'routeDataHub',
+  [ROUTES.ACCOUNTS]: 'routeAccounts',
+  [ROUTES.DIAGNOSTICS]: 'routeDiagnostics',
+});
+
+export const MAX_TIMELINE_EVENTS = 500;
+export const MAX_DRAFTS = 50;

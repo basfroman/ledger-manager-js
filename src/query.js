@@ -1,7 +1,8 @@
 import { createArgInput, collectInputValues } from './arg-input.js';
 import { escapeHtml, formatDocs, highlightJson } from './chain-utils.js';
 import { state } from './state.js';
-import { dom, setupCustomDropdown, populateCustomDropdown, log } from './ui.js';
+import { dom, setupCustomDropdown, populateCustomDropdown, log, renderTimeline } from './ui.js';
+import { pushTimelineEvent } from './timeline.js';
 
 function buildStorageDocHtml(meta, registry) {
   let html = '';
@@ -117,13 +118,18 @@ function onStorageItemChanged(item) {
       const div = document.createElement('div');
       div.className = 'arg-field';
       const label = document.createElement('label');
-      label.innerHTML = `key <span class="arg-type">${keyDef.type}</span>`;
+      label.innerHTML = `key <span class="arg-type">${escapeHtml(keyDef.type)}</span>`;
       div.appendChild(label);
       div.appendChild(createArgInput(syntheticArg, registry, updateQueryButton));
       dom.queryKeys.appendChild(div);
     } else {
       const tupleDef = registry.lookup.getTypeDef(mapType.key);
-      const subTypes = tupleDef.sub;
+      const subTypes = Array.isArray(tupleDef.sub) ? tupleDef.sub : [];
+      if (subTypes.length < hashersCount) {
+        dom.queryKeys.innerHTML = '<div class="text-muted text-sm">Unsupported storage key layout</div>';
+        updateQueryButton();
+        return;
+      }
       for (let i = 0; i < hashersCount; i++) {
         const sub = subTypes[i];
         const syntheticArg = { name: `key${i}`, typeName: sub.type, type: sub.lookupIndex ?? mapType.key };
@@ -131,7 +137,7 @@ function onStorageItemChanged(item) {
         const div = document.createElement('div');
         div.className = 'arg-field';
         const label = document.createElement('label');
-        label.innerHTML = `key${i} <span class="arg-type">${sub.type}</span>`;
+        label.innerHTML = `key${i} <span class="arg-type">${escapeHtml(sub.type)}</span>`;
         div.appendChild(label);
         div.appendChild(createArgInput(syntheticArg, registry, updateQueryButton));
         dom.queryKeys.appendChild(div);
@@ -160,6 +166,7 @@ async function executeQuery() {
     const json = JSON.stringify(result.toHuman(), null, 2);
     dom.queryResult.innerHTML = highlightJson(json);
     log(`Query ${pallet}.${item} OK`);
+    addPinButton(dom.queryResultWrap, `Query: ${pallet}.${item}`, json);
   } catch (err) {
     dom.queryResult.textContent = `Error: ${err.message}`;
     dom.queryResult.classList.add('status-err');
@@ -205,6 +212,21 @@ export function selectQuery(pallet, item) {
   dom.qStorageSelectDropdown.querySelectorAll('.custom-select-option').forEach(o => {
     o.classList.toggle('selected', o.dataset.value === item);
   });
+}
+
+function addPinButton(container, title, detail) {
+  const existing = container.querySelector('.btn-pin-timeline');
+  if (existing) existing.remove();
+  const btn = document.createElement('button');
+  btn.className = 'btn-secondary btn-sm btn-pin-timeline mt-8';
+  btn.textContent = '📌 Pin to Timeline';
+  btn.addEventListener('click', () => {
+    pushTimelineEvent('pin', title, detail);
+    renderTimeline();
+    btn.textContent = '✓ Pinned';
+    btn.disabled = true;
+  });
+  container.appendChild(btn);
 }
 
 export function initQuery() {

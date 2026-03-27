@@ -12,241 +12,284 @@
 </head>
 <body>
 
-<header id="appHeader" class="app-header hidden">
-  <div id="chainInfoBar" class="chain-info-bar text-muted text-sm"></div>
-</header>
-
-<div class="main-workspace" id="mainWorkspace">
-  <div class="left-column" id="leftColumn">
-    <section id="networkSection">
-      <h2>Network</h2>
-      <div class="network-fields">
-        <div>
-          <div class="custom-select" id="networkPresetWrap">
-            <button class="custom-select-trigger" id="networkPresetTrigger" type="button">
-              <span class="custom-select-label">Latent</span>
-              <span class="custom-select-url">wss://lite.sub.latent.to:443</span>
-            </button>
-            <div class="custom-select-dropdown hidden" id="networkPresetDropdown"></div>
-          </div>
-        </div>
-        <div id="customUrlWrap" class="hidden">
-          <label>Custom RPC URL</label>
-          <input id="customUrl" value="ws://127.0.0.1:9944" />
-        </div>
-        <div class="network-buttons">
-          <button class="btn-primary" id="connectBtn">Connect</button>
-          <button class="btn-secondary" id="disconnectBtn" disabled>Disconnect</button>
-        </div>
-      </div>
-      <div class="status-box status-neutral" id="networkStatus">Disconnected</div>
-    </section>
-
-    <section id="sourceSection" class="panel-locked" aria-disabled="true">
-      <div class="section-header">
-        <h2>Source</h2>
-        <div class="seg-control" id="accountSourceToggle">
-          <button type="button" class="active" data-mode="ledger">Ledger</button>
-          <button type="button" data-mode="wallet">Wallet</button>
-        </div>
-      </div>
-      <div id="ledgerOnlyWrap">
-        <div class="ledger-actions">
-          <button class="btn-primary" id="addDeviceBtn">+ Add Device</button>
-          <button class="btn-primary" id="loadAccountsBtn" disabled>Load 5 Accounts</button>
-          <div class="index-input-wrap">
-            <input id="singleAccountIndex" class="index-input" type="number" min="0" step="1" value="0" placeholder="#" />
-          </div>
-          <button class="btn-secondary" id="loadSingleAccountBtn" disabled>Load by Index</button>
-        </div>
-        <table class="mt-12">
-          <thead><tr><th>Device</th><th></th></tr></thead>
-          <tbody id="deviceListBody">
-            <tr><td colspan="2" class="text-muted">No authorized devices</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div id="walletOnlyWrap" class="hidden">
-        <label for="walletExtensionTrigger">Browser extension</label>
-        <div class="wallet-extension-row mt-8">
-          <div class="custom-select wallet-extension-select-wrap" id="walletExtensionWrap">
-            <button type="button" class="custom-select-trigger" id="walletExtensionTrigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="walletExtensionDropdown" aria-describedby="walletExtensionHint">
-              <span class="custom-select-label">— Choose extension —</span>
-            </button>
-            <div class="custom-select-dropdown hidden" id="walletExtensionDropdown" role="listbox"></div>
-          </div>
-          <button type="button" class="btn-secondary btn-sm" id="refreshExtensionsBtn">Refresh list</button>
-        </div>
-        <p class="hint text-sm mt-8" id="walletExtensionHint">Click Refresh to detect injected wallets.</p>
-        <button type="button" class="btn-primary mt-12" id="loadExtensionAccountsBtn" disabled>Authorize &amp; load accounts</button>
-        <p class="hint text-sm mt-8">
-          The page may prompt every installed Polkadot-compatible extension once; only accounts from the extension you chose are loaded.
-        </p>
-      </div>
-      <div class="status-box status-neutral mt-12" id="ledgerStatus">No device selected</div>
-    </section>
-
-    <section id="accountsSection" class="panel-locked" aria-disabled="true">
-      <h2 id="accountsTitle">Accounts</h2>
-      <div class="refresh-bar">
-        <button class="btn-secondary btn-sm" id="refreshBalancesBtn" disabled>Refresh Balances</button>
-      </div>
-      <div class="accounts-scroll">
-        <table>
-          <thead>
-            <tr><th>#</th><th>Address</th><th>Derivation Path</th><th>Balance (TAO)</th><th></th></tr>
-          </thead>
-          <tbody id="accountsBody">
-            <tr><td colspan="5" class="text-muted">No accounts loaded</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+<div id="topBar" class="top-bar">
+  <div class="top-bar-section top-bar-network">
+    <div class="custom-select custom-select-compact" id="networkPresetWrap">
+      <button class="custom-select-trigger" id="networkPresetTrigger" type="button">
+        <span class="custom-select-label">Latent</span>
+        <span class="custom-select-url">wss://lite.sub.latent.to:443</span>
+      </button>
+      <div class="custom-select-dropdown hidden" id="networkPresetDropdown"></div>
+    </div>
+    <div id="customUrlWrap" class="hidden">
+      <input id="customUrl" value="ws://127.0.0.1:9944" />
+    </div>
+    <div class="top-bar-buttons">
+      <button class="btn-primary btn-sm" id="connectBtn">Connect</button>
+      <button class="btn-secondary btn-sm" id="disconnectBtn" disabled>Disconnect</button>
+    </div>
+    <div class="status-box status-neutral status-inline" id="networkStatus"></div>
   </div>
 
-  <section id="txSection" class="panel-locked" aria-disabled="true">
-    <div class="section-header">
-      <h2 id="rightPanelTitle">Extrinsic Builder</h2>
-      <div class="seg-control" id="rightPanelToggle">
-        <button type="button" class="active" data-pane="builderPane" data-title="Extrinsic Builder">Extrinsic</button>
-        <button type="button" data-pane="queryPane" data-title="Queries">Queries</button>
-        <button type="button" data-pane="constantsPane" data-title="Constants">Constants</button>
-      </div>
-    </div>
+  <div class="top-bar-divider"></div>
 
-    <div id="builderPane">
-      <div id="signingAccountBar" class="text-muted text-sm hidden">Signing as: <code id="signingAddr"></code></div>
-      <div class="row">
-        <div>
-          <label>Pallet</label>
-          <div class="custom-select" id="palletSelectWrap">
-            <button class="custom-select-trigger" id="palletSelectTrigger" type="button" disabled>
-              <span class="custom-select-label">Connect to load pallets...</span>
-            </button>
-            <div class="custom-select-dropdown hidden" id="palletSelectDropdown"></div>
-          </div>
-        </div>
-        <div>
-          <label>Method</label>
-          <div class="custom-select" id="methodSelectWrap">
-            <button class="custom-select-trigger" id="methodSelectTrigger" type="button" disabled>
-              <span class="custom-select-label">Select a pallet first</span>
-            </button>
-            <div class="custom-select-dropdown hidden" id="methodSelectDropdown"></div>
-          </div>
-        </div>
-      </div>
-      <div class="mt-8" id="extrinsicArgs"></div>
-      <div class="row mt-8 sticky-action">
-        <button class="btn-secondary" id="feeEstimateBtn" disabled>Estimate Fee</button>
-        <button class="btn-primary" id="extrinsicSendBtn" disabled>Sign &amp; Send</button>
-      </div>
-      <div class="text-sm text-muted mt-8 hidden" id="feeEstimate"></div>
-      <div class="doc-block mt-8 hidden" id="extrinsicDocs"></div>
-      <p class="hint">
-        Uses the account selected in Accounts. Arguments are parsed as strings;
-        use JSON for complex types (arrays, objects).
-        Ledger Generic app requires <code>metadata-hash</code> enabled at node compile time
-        (mainnet/testnet have it). For custom/local nodes, rebuild with
-        <code>--features metadata-hash</code>, or signing may fail with <code>CannotLookup</code>.
-      </p>
+  <div class="top-bar-section">
+    <div class="seg-control seg-control-sm" id="accountSourceToggle">
+      <button type="button" class="active" data-mode="ledger">Ledger</button>
+      <button type="button" data-mode="wallet">Wallet</button>
     </div>
+  </div>
 
-    <div id="queryPane" class="hidden">
-      <div class="row">
-        <div>
-          <label>Pallet</label>
-          <div class="custom-select" id="qPalletSelectWrap">
-            <button class="custom-select-trigger" id="qPalletSelectTrigger" type="button" disabled>
-              <span class="custom-select-label">Connect to load pallets...</span>
-            </button>
-            <div class="custom-select-dropdown hidden" id="qPalletSelectDropdown"></div>
-          </div>
-        </div>
-        <div>
-          <label>Storage Item</label>
-          <div class="custom-select" id="qStorageSelectWrap">
-            <button class="custom-select-trigger" id="qStorageSelectTrigger" type="button" disabled>
-              <span class="custom-select-label">Select a pallet first</span>
-            </button>
-            <div class="custom-select-dropdown hidden" id="qStorageSelectDropdown"></div>
-          </div>
-        </div>
-      </div>
-      <div class="mt-8" id="queryKeys"></div>
-      <div class="row mt-8">
-        <button class="btn-primary" id="queryExecuteBtn" disabled>Execute Query</button>
-      </div>
-      <div class="doc-block mt-8 hidden" id="queryDocs"></div>
-      <div class="mt-8 hidden" id="queryResultWrap">
-        <label>Result</label>
-        <div class="log-wrap">
-          <button class="log-copy-btn" id="queryResultCopyBtn" title="Copy result"></button>
-          <pre class="result-block query-result-block" id="queryResult"></pre>
-        </div>
-      </div>
+  <div class="top-bar-section top-bar-chain">
+    <div id="signingAccountBar" class="top-bar-account hidden">
+      <code id="signingAddr"></code>
+      <span class="top-bar-sep">|</span>
     </div>
-
-    <div id="constantsPane" class="hidden">
-      <div class="row">
-        <div>
-          <label>Pallet</label>
-          <div class="custom-select" id="cPalletSelectWrap">
-            <button class="custom-select-trigger" id="cPalletSelectTrigger" type="button" disabled>
-              <span class="custom-select-label">Connect to load pallets...</span>
-            </button>
-            <div class="custom-select-dropdown hidden" id="cPalletSelectDropdown"></div>
-          </div>
-        </div>
-        <div>
-          <label>Constant</label>
-          <div class="custom-select" id="cConstantSelectWrap">
-            <button class="custom-select-trigger" id="cConstantSelectTrigger" type="button" disabled>
-              <span class="custom-select-label">Select a pallet first</span>
-            </button>
-            <div class="custom-select-dropdown hidden" id="cConstantSelectDropdown"></div>
-          </div>
-        </div>
-      </div>
-      <div class="doc-block mt-8 hidden" id="constantDocs"></div>
-      <div class="mt-8 hidden" id="constantResultWrap">
-        <label>Value</label>
-        <div class="log-wrap">
-          <button class="log-copy-btn" id="constantResultCopyBtn" title="Copy value"></button>
-          <pre class="result-block query-result-block" id="constantResult"></pre>
-        </div>
-      </div>
-    </div>
-  </section>
+    <div id="chainInfoBar" class="chain-info-bar text-sm"></div>
+  </div>
 </div>
 
-<!-- Footer: Status + Log -->
-<div class="bottom-row" id="bottomRow">
-  <section>
-    <h2>Status</h2>
-    <div class="status-box status-neutral" id="txStatus">Idle</div>
-    <div class="mt-12 hidden" id="txResultWrap">
-      <label>Result</label>
-      <div class="log-wrap">
-        <button class="log-copy-btn" id="resultCopyBtn" title="Copy result"></button>
-        <div class="result-block" id="txResult"></div>
+<div id="appBody" class="app-body">
+  <nav id="navRail" class="nav-rail" role="tablist" aria-label="Main navigation">
+    <button type="button" class="nav-rail-btn active" role="tab" data-route="compose" aria-selected="true" title="Compose">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      <span>Compose</span>
+    </button>
+    <button type="button" class="nav-rail-btn" role="tab" data-route="dataHub" aria-selected="false" title="Data Hub">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      <span>Data</span>
+    </button>
+    <button type="button" class="nav-rail-btn" role="tab" data-route="accounts" aria-selected="false" title="Accounts">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      <span>Accounts</span>
+    </button>
+    <button type="button" class="nav-rail-btn" role="tab" data-route="diagnostics" aria-selected="false" title="Diagnostics">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+      <span>Debug</span>
+    </button>
+  </nav>
+
+  <main id="mainCanvas" class="main-canvas">
+    <!-- Route: Compose -->
+    <div id="routeCompose" role="tabpanel">
+      <div id="builderPane">
+        <div class="row">
+          <div>
+            <label>Pallet</label>
+            <div class="custom-select" id="palletSelectWrap">
+              <button class="custom-select-trigger" id="palletSelectTrigger" type="button" disabled>
+                <span class="custom-select-label">Connect to load pallets...</span>
+              </button>
+              <div class="custom-select-dropdown hidden" id="palletSelectDropdown"></div>
+            </div>
+          </div>
+          <div>
+            <label>Method</label>
+            <div class="custom-select" id="methodSelectWrap">
+              <button class="custom-select-trigger" id="methodSelectTrigger" type="button" disabled>
+                <span class="custom-select-label">Select a pallet first</span>
+              </button>
+              <div class="custom-select-dropdown hidden" id="methodSelectDropdown"></div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-8" id="extrinsicArgs"></div>
+        <div class="row mt-8 sticky-action">
+          <button class="btn-secondary" id="feeEstimateBtn" disabled>Estimate Fee</button>
+          <button class="btn-primary" id="extrinsicSendBtn" disabled>Sign &amp; Send</button>
+        </div>
+        <div class="text-sm text-muted mt-8 hidden" id="feeEstimate"></div>
+        <div id="preflightChecklist" class="mt-8"></div>
+        <p class="hint">
+          Uses the account selected in Accounts. Arguments are parsed as strings;
+          use JSON for complex types (arrays, objects).
+          Ledger Generic app requires <code>metadata-hash</code> enabled at node compile time
+          (mainnet/testnet have it). For custom/local nodes, rebuild with
+          <code>--features metadata-hash</code>, or signing may fail with <code>CannotLookup</code>.
+        </p>
       </div>
-      <a class="btn-explorer mt-8 hidden" id="explorerLink" href="#" target="_blank" rel="noopener noreferrer">
-        <span id="explorerLinkLabel">View on Explorer</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-      </a>
+      <div class="status-box status-neutral mt-12" id="txStatus">Idle</div>
+      <div class="mt-12 hidden" id="txResultWrap">
+        <label>Result</label>
+        <div class="log-wrap">
+          <button class="log-copy-btn" id="resultCopyBtn" title="Copy result"></button>
+          <div class="result-block" id="txResult"></div>
+        </div>
+        <a class="btn-explorer mt-8 hidden" id="explorerLink" href="#" target="_blank" rel="noopener noreferrer">
+          <span id="explorerLinkLabel">View on Explorer</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+      </div>
     </div>
-  </section>
-  <section id="logSection">
-    <div class="section-header">
-      <h2>Log</h2>
-      <button type="button" class="btn-secondary btn-sm" id="footerCollapseBtn">Collapse</button>
+
+    <!-- Route: Data Hub -->
+    <div id="routeDataHub" class="hidden" role="tabpanel">
+      <div class="section-header">
+        <h2 id="rightPanelTitle">Queries</h2>
+        <div class="seg-control" id="rightPanelToggle">
+          <button type="button" class="active" data-pane="queryPane" data-title="Queries">Queries</button>
+          <button type="button" data-pane="constantsPane" data-title="Constants">Constants</button>
+        </div>
+      </div>
+
+      <div id="queryPane">
+        <div class="row">
+          <div>
+            <label>Pallet</label>
+            <div class="custom-select" id="qPalletSelectWrap">
+              <button class="custom-select-trigger" id="qPalletSelectTrigger" type="button" disabled>
+                <span class="custom-select-label">Connect to load pallets...</span>
+              </button>
+              <div class="custom-select-dropdown hidden" id="qPalletSelectDropdown"></div>
+            </div>
+          </div>
+          <div>
+            <label>Storage Item</label>
+            <div class="custom-select" id="qStorageSelectWrap">
+              <button class="custom-select-trigger" id="qStorageSelectTrigger" type="button" disabled>
+                <span class="custom-select-label">Select a pallet first</span>
+              </button>
+              <div class="custom-select-dropdown hidden" id="qStorageSelectDropdown"></div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-8" id="queryKeys"></div>
+        <div class="row mt-8">
+          <button class="btn-primary" id="queryExecuteBtn" disabled>Execute Query</button>
+        </div>
+        <div class="mt-8 hidden" id="queryResultWrap">
+          <label>Result</label>
+          <div class="log-wrap">
+            <button class="log-copy-btn" id="queryResultCopyBtn" title="Copy result"></button>
+            <pre class="result-block query-result-block" id="queryResult"></pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="constantsPane" class="hidden">
+        <div class="row">
+          <div>
+            <label>Pallet</label>
+            <div class="custom-select" id="cPalletSelectWrap">
+              <button class="custom-select-trigger" id="cPalletSelectTrigger" type="button" disabled>
+                <span class="custom-select-label">Connect to load pallets...</span>
+              </button>
+              <div class="custom-select-dropdown hidden" id="cPalletSelectDropdown"></div>
+            </div>
+          </div>
+          <div>
+            <label>Constant</label>
+            <div class="custom-select" id="cConstantSelectWrap">
+              <button class="custom-select-trigger" id="cConstantSelectTrigger" type="button" disabled>
+                <span class="custom-select-label">Select a pallet first</span>
+              </button>
+              <div class="custom-select-dropdown hidden" id="cConstantSelectDropdown"></div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-8 hidden" id="constantResultWrap">
+          <label>Value</label>
+          <div class="log-wrap">
+            <button class="log-copy-btn" id="constantResultCopyBtn" title="Copy value"></button>
+            <pre class="result-block query-result-block" id="constantResult"></pre>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="log-wrap">
-      <button class="log-copy-btn" id="logCopyBtn" title="Copy log"></button>
-      <pre class="result-block log-panel" id="logPanel"></pre>
+
+    <!-- Route: Accounts -->
+    <div id="routeAccounts" class="hidden" role="tabpanel">
+      <section id="sourceSection">
+        <div class="section-header">
+          <h2>Source</h2>
+        </div>
+        <div id="ledgerOnlyWrap">
+          <div class="ledger-actions">
+            <button class="btn-primary" id="addDeviceBtn">+ Add Device</button>
+            <button class="btn-primary" id="loadAccountsBtn" disabled>Load 5 Accounts</button>
+            <div class="index-input-wrap">
+              <input id="singleAccountIndex" class="index-input" type="number" min="0" step="1" value="0" placeholder="#" />
+            </div>
+            <button class="btn-secondary" id="loadSingleAccountBtn" disabled>Load by Index</button>
+          </div>
+          <table class="mt-12">
+            <thead><tr><th>Device</th><th></th></tr></thead>
+            <tbody id="deviceListBody">
+              <tr><td colspan="2" class="text-muted">No authorized devices</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="walletOnlyWrap" class="hidden">
+          <label for="walletExtensionTrigger">Browser extension</label>
+          <div class="wallet-extension-row mt-8">
+            <div class="custom-select wallet-extension-select-wrap" id="walletExtensionWrap">
+              <button type="button" class="custom-select-trigger" id="walletExtensionTrigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="walletExtensionDropdown" aria-describedby="walletExtensionHint">
+                <span class="custom-select-label">— Choose extension —</span>
+              </button>
+              <div class="custom-select-dropdown hidden" id="walletExtensionDropdown" role="listbox"></div>
+            </div>
+            <button type="button" class="btn-secondary btn-sm" id="refreshExtensionsBtn">Refresh list</button>
+          </div>
+          <p class="hint text-sm mt-8" id="walletExtensionHint">Click Refresh to detect injected wallets.</p>
+          <button type="button" class="btn-primary mt-12" id="loadExtensionAccountsBtn" disabled>Authorize &amp; load accounts</button>
+          <p class="hint text-sm mt-8">
+            The page may prompt every installed Polkadot-compatible extension once; only accounts from the extension you chose are loaded.
+          </p>
+        </div>
+        <div class="status-box status-neutral mt-12" id="ledgerStatus">No device selected</div>
+      </section>
+
+      <section id="accountsSection" class="panel-locked mt-8" aria-disabled="true">
+        <h2 id="accountsTitle">Accounts</h2>
+        <div class="refresh-bar">
+          <button class="btn-secondary btn-sm" id="refreshBalancesBtn" disabled>Refresh Balances</button>
+        </div>
+        <div class="accounts-scroll">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Address</th><th id="pathColHeader">Derivation Path</th><th>Balance (TAO)</th><th></th></tr>
+            </thead>
+            <tbody id="accountsBody">
+              <tr><td colspan="5" class="text-muted">No accounts loaded</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
-  </section>
+
+    <!-- Route: Diagnostics -->
+    <div id="routeDiagnostics" class="hidden" role="tabpanel">
+      <h2>Diagnostics</h2>
+      <div id="diagnosticsCard"></div>
+      <section id="logSection" class="mt-8">
+        <div class="section-header">
+          <h2>Raw Log</h2>
+        </div>
+        <div class="log-wrap">
+          <button class="log-copy-btn" id="logCopyBtn" title="Copy log"></button>
+          <pre class="result-block log-panel" id="logPanel"></pre>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <aside id="insightRail" class="insight-rail">
+    <div class="insight-resize-handle" id="insightResizeHandle"></div>
+    <h2>Insight</h2>
+    <div id="insightContent"></div>
+    <div class="doc-block mt-8 hidden" id="extrinsicDocs" data-insight-route="compose"></div>
+    <div class="doc-block mt-8 hidden" id="queryDocs" data-insight-route="dataHub"></div>
+    <div class="doc-block mt-8 hidden" id="constantDocs" data-insight-route="dataHub"></div>
+  </aside>
+</div>
+
+<div id="timelineDock" class="timeline-dock">
+  <div class="timeline-resize-handle" id="timelineResizeHandle"></div>
+  <div class="section-header">
+    <h2>Timeline</h2>
+    <button type="button" class="btn-secondary btn-sm" id="footerCollapseBtn">Collapse</button>
+  </div>
+  <div id="timelineList" class="timeline-list" role="log" aria-live="polite"></div>
 </div>
 
 <div id="commandPalette" class="command-palette-overlay hidden" aria-hidden="true">

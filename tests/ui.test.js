@@ -120,23 +120,23 @@ describe('parseAccentRgbTuple', () => {
 });
 
 describe('syncPanelAvailability', () => {
-  it('disconnected: locks source, accounts, txSection; builderPane NOT locked (no compounding)', () => {
+  it('disconnected: locks accounts, dataHub; sourceSection always unlocked; builderPane NOT locked (no compounding)', () => {
     state.api = null;
     state.lastLoadedAccounts = [];
     syncPanelAvailability();
-    expect(dom.sourceSection.classList.contains('panel-locked')).toBe(true);
+    expect(dom.sourceSection.classList.contains('panel-locked')).toBe(false);
     expect(dom.accountsSection.classList.contains('panel-locked')).toBe(true);
-    expect(dom.txSection.classList.contains('panel-locked')).toBe(true);
+    expect(dom.routeDataHub.classList.contains('panel-locked')).toBe(true);
     expect(dom.builderPane.classList.contains('panel-locked')).toBe(false);
   });
 
-  it('connected, no accounts: unlocks txSection; locks builderPane', () => {
+  it('connected, no accounts: unlocks dataHub; locks builderPane', () => {
     state.api = { rpc: {} };
     state.lastLoadedAccounts = [];
     syncPanelAvailability();
     expect(dom.sourceSection.classList.contains('panel-locked')).toBe(false);
     expect(dom.accountsSection.classList.contains('panel-locked')).toBe(false);
-    expect(dom.txSection.classList.contains('panel-locked')).toBe(false);
+    expect(dom.routeDataHub.classList.contains('panel-locked')).toBe(false);
     expect(dom.builderPane.classList.contains('panel-locked')).toBe(true);
   });
 
@@ -144,7 +144,7 @@ describe('syncPanelAvailability', () => {
     state.api = { rpc: {} };
     state.lastLoadedAccounts = [{ accountIndex: 0, address: '5x' }];
     syncPanelAvailability();
-    expect(dom.txSection.classList.contains('panel-locked')).toBe(false);
+    expect(dom.routeDataHub.classList.contains('panel-locked')).toBe(false);
     expect(dom.builderPane.classList.contains('panel-locked')).toBe(false);
   });
 });

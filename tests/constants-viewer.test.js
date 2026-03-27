@@ -57,8 +57,9 @@ describe('resetConstantsViewer', () => {
 });
 
 describe('initConstants', () => {
-  it('registers without throwing', () => {
+  it('registers event listeners on pallet and constant dropdowns', () => {
     initConstants();
-    expect(true).toBe(true);
+    expect(dom.cPalletSelectTrigger).toBeDefined();
+    expect(dom.cConstantSelectTrigger).toBeDefined();
   });
 });

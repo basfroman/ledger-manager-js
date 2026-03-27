@@ -1,6 +1,7 @@
 import { formatDocs, highlightJson } from './chain-utils.js';
 import { state } from './state.js';
-import { dom, setupCustomDropdown, populateCustomDropdown, log } from './ui.js';
+import { dom, setupCustomDropdown, populateCustomDropdown, log, renderTimeline } from './ui.js';
+import { pushTimelineEvent } from './timeline.js';
 
 function onConstantPalletChanged(pallet) {
   state.cConstantSelectValue = '';
@@ -45,6 +46,22 @@ function onConstantItemChanged(item) {
   dom.constantResult.innerHTML = highlightJson(json);
   dom.constantResultWrap.classList.remove('hidden');
   log(`Constant ${pallet}.${item} = ${JSON.stringify(value)}`);
+  addPinButton(dom.constantResultWrap, `Constant: ${pallet}.${item}`, json);
+}
+
+function addPinButton(container, title, detail) {
+  const existing = container.querySelector('.btn-pin-timeline');
+  if (existing) existing.remove();
+  const btn = document.createElement('button');
+  btn.className = 'btn-secondary btn-sm btn-pin-timeline mt-8';
+  btn.textContent = '📌 Pin to Timeline';
+  btn.addEventListener('click', () => {
+    pushTimelineEvent('pin', title, detail);
+    renderTimeline();
+    btn.textContent = '✓ Pinned';
+    btn.disabled = true;
+  });
+  container.appendChild(btn);
 }
 
 export function populateConstantPallets(api) {

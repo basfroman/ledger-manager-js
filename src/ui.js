@@ -1,5 +1,5 @@
-import { ACCOUNT_SOURCE, COPY_FEEDBACK_MS, ICON_COPY, ICON_CHECK } from './constants.js';
-import { copyToClipboard } from './chain-utils.js';
+import { ACCOUNT_SOURCE, COPY_FEEDBACK_MS, ICON_COPY, ICON_CHECK, ROUTES, ROUTE_TO_DOM_ID } from './constants.js';
+import { copyToClipboard, truncAddr } from './chain-utils.js';
 import { state } from './state.js';
 
 const $ = (id) => document.getElementById(id);
@@ -9,6 +9,19 @@ export const dom = {};
 
 export function initDomRefs() {
   Object.assign(dom, {
+    topBar: $('topBar'),
+    navRail: $('navRail'),
+    mainCanvas: $('mainCanvas'),
+    insightRail: $('insightRail'),
+    insightContent: $('insightContent'),
+    timelineDock: $('timelineDock'),
+    timelineList: $('timelineList'),
+    routeCompose: $('routeCompose'),
+    routeDataHub: $('routeDataHub'),
+    routeAccounts: $('routeAccounts'),
+    routeDiagnostics: $('routeDiagnostics'),
+    preflightChecklist: $('preflightChecklist'),
+    diagnosticsCard: $('diagnosticsCard'),
     networkPresetTrigger: $('networkPresetTrigger'),
     networkPresetDropdown: $('networkPresetDropdown'),
     customUrlWrap: $('customUrlWrap'),
@@ -78,10 +91,7 @@ export function initDomRefs() {
     explorerLinkLabel: $('explorerLinkLabel'),
     sourceSection: $('sourceSection'),
     accountsSection: $('accountsSection'),
-    txSection: $('txSection'),
-    appHeader: $('appHeader'),
     chainInfoBar: $('chainInfoBar'),
-    bottomRow: $('bottomRow'),
     footerCollapseBtn: $('footerCollapseBtn'),
     commandPalette: $('commandPalette'),
     paletteSearch: $('paletteSearch'),
@@ -92,19 +102,68 @@ export function initDomRefs() {
 /**
  * Source + Accounts: locked until RPC connected.
  * Extrinsic Builder: locked until at least one account is loaded from the active source.
+ * DataHub: locked until connected.
  */
 export function syncPanelAvailability() {
   const connected = Boolean(state.api);
   const accountsReady = connected && state.lastLoadedAccounts.length > 0;
 
-  dom.sourceSection.classList.toggle('panel-locked', !connected);
   dom.accountsSection.classList.toggle('panel-locked', !connected);
-  dom.txSection.classList.toggle('panel-locked', !connected);
   dom.builderPane.classList.toggle('panel-locked', connected && !accountsReady);
+  dom.routeDataHub.classList.toggle('panel-locked', !connected);
 
-  dom.sourceSection.setAttribute('aria-disabled', String(!connected));
   dom.accountsSection.setAttribute('aria-disabled', String(!connected));
-  dom.txSection.setAttribute('aria-disabled', String(!connected));
+}
+
+/**
+ * Switches the active route displayed in mainCanvas.
+ * Updates navRail active state, route panel visibility, and insightRail docs.
+ */
+export function setActiveRoute(route) {
+  state.activeRoute = route;
+  const activeDomId = ROUTE_TO_DOM_ID[route];
+  for (const [, domId] of Object.entries(ROUTE_TO_DOM_ID)) {
+    const el = dom[domId];
+    if (el) el.classList.toggle('hidden', domId !== activeDomId);
+  }
+  for (const btn of dom.navRail.querySelectorAll('[data-route]')) {
+    const isActive = btn.dataset.route === route;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-selected', String(isActive));
+  }
+  for (const el of dom.insightRail.querySelectorAll('[data-insight-route]')) {
+    el.style.display = el.dataset.insightRoute === route ? '' : 'none';
+  }
+}
+
+/**
+ * Switches the active sub-tab within DataHub (Queries vs Constants).
+ * Manages insightRail docs visibility for the active sub-tab.
+ */
+export function setDataHubTab(pane) {
+  dom.queryPane.classList.toggle('hidden', pane !== 'queryPane');
+  dom.constantsPane.classList.toggle('hidden', pane !== 'constantsPane');
+  const showQuery = pane === 'queryPane' && dom.queryDocs.innerHTML.trim();
+  const showConst = pane === 'constantsPane' && dom.constantDocs.innerHTML.trim();
+  dom.queryDocs.classList.toggle('hidden', !showQuery);
+  dom.constantDocs.classList.toggle('hidden', !showConst);
+  const activeBtn = dom.rightPanelToggle.querySelector(`[data-pane="${pane}"]`);
+  dom.rightPanelTitle.textContent = activeBtn?.dataset.title ?? '';
+  for (const b of dom.rightPanelToggle.querySelectorAll('button')) {
+    b.classList.toggle('active', b.dataset.pane === pane);
+  }
+}
+
+/**
+ * Updates the topBar account indicator. Sole owner of signingAccountBar display.
+ */
+export function updateTopBar() {
+  if (state.selectedAccount) {
+    dom.signingAddr.textContent = `Account: ${truncAddr(state.selectedAccount.address)}`;
+    dom.signingAccountBar.classList.remove('hidden');
+  } else {
+    dom.signingAccountBar.classList.add('hidden');
+  }
 }
 
 export function setLedgerStatus(text, tone) {
@@ -181,12 +240,6 @@ export function setupCustomDropdown(trigger, dropdown, wrapId, onChange) {
       opt.style.display = opt.textContent.toLowerCase().includes(q) ? '' : 'none';
     });
   });
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest(`#${wrapId}`)) {
-      dropdown.classList.add('hidden');
-      if (trigger.hasAttribute('aria-expanded')) trigger.setAttribute('aria-expanded', 'false');
-    }
-  });
 }
 
 export function populateCustomDropdown(trigger, dropdown, items, placeholder) {
@@ -203,7 +256,10 @@ export function populateCustomDropdown(trigger, dropdown, items, placeholder) {
     const div = document.createElement('div');
     div.className = 'custom-select-option';
     div.dataset.value = item;
-    div.innerHTML = `<span class="custom-select-label">${item}</span>`;
+    const label = document.createElement('span');
+    label.className = 'custom-select-label';
+    label.textContent = item;
+    div.appendChild(label);
     dropdown.appendChild(div);
   }
   trigger.querySelector('.custom-select-label').textContent = placeholder;
@@ -304,6 +360,52 @@ export function matrixRain() {
   requestAnimationFrame(draw);
 }
 
+/**
+ * Renders timeline events from state into the timelineList element.
+ */
+export function renderTimeline() {
+  dom.timelineList.innerHTML = '';
+  for (const evt of state.timelineEvents) {
+    const d = new Date(evt.ts);
+    const ts = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+
+    const row = document.createElement('div');
+    row.className = `timeline-event timeline-${evt.type}`;
+
+    const tsSpan = document.createElement('span');
+    tsSpan.className = 'timeline-ts';
+    tsSpan.textContent = ts;
+
+    const titleSpan = document.createElement('span');
+    titleSpan.className = 'timeline-title';
+    titleSpan.textContent = evt.title;
+
+    row.append(tsSpan, titleSpan);
+
+    if (evt.link) {
+      const a = document.createElement('a');
+      a.href = evt.link.url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.className = 'timeline-link';
+      a.textContent = evt.link.label;
+      row.appendChild(a);
+    }
+
+    if (evt.detail) {
+      row.style.cursor = 'pointer';
+      const detailDiv = document.createElement('div');
+      detailDiv.className = 'timeline-detail';
+      detailDiv.textContent = typeof evt.detail === 'string' ? evt.detail : JSON.stringify(evt.detail);
+      row.addEventListener('click', () => row.classList.toggle('expanded'));
+      dom.timelineList.append(row, detailDiv);
+    } else {
+      dom.timelineList.appendChild(row);
+    }
+  }
+  dom.timelineList.scrollTop = dom.timelineList.scrollHeight;
+}
+
 export function initCopyButton(btn, sourceEl) {
   btn.innerHTML = ICON_COPY;
   btn.addEventListener('click', async () => {
@@ -339,15 +441,124 @@ export function initUI() {
   dom.rightPanelToggle.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-pane]');
     if (!btn) return;
-    const pane = btn.dataset.pane;
-    for (const b of dom.rightPanelToggle.querySelectorAll('button')) {
-      b.classList.toggle('active', b === btn);
-    }
-    dom.builderPane.classList.toggle('hidden', pane !== 'builderPane');
-    dom.queryPane.classList.toggle('hidden', pane !== 'queryPane');
-    dom.constantsPane.classList.toggle('hidden', pane !== 'constantsPane');
-    dom.rightPanelTitle.textContent = btn.dataset.title;
+    setDataHubTab(btn.dataset.pane);
   });
 
+  dom.footerCollapseBtn.addEventListener('click', () => {
+    dom.timelineDock.classList.toggle('collapsed');
+    dom.footerCollapseBtn.textContent = dom.timelineDock.classList.contains('collapsed') ? 'Expand' : 'Collapse';
+  });
+
+  dom.navRail.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-route]');
+    if (!btn) return;
+    setActiveRoute(btn.dataset.route);
+  });
+
+  document.addEventListener('click', (e) => {
+    for (const dd of document.querySelectorAll('.custom-select-dropdown:not(.hidden)')) {
+      const wrap = dd.closest('.custom-select');
+      if (wrap && !wrap.contains(e.target)) {
+        dd.classList.add('hidden');
+        const trigger = wrap.querySelector('.custom-select-trigger');
+        if (trigger?.hasAttribute('aria-expanded')) trigger.setAttribute('aria-expanded', 'false');
+      }
+    }
+  });
+
+  initInsightResize();
+  initTimelineResize();
+
   syncPanelAvailability();
+  setActiveRoute(state.activeRoute);
+}
+
+const TIMELINE_HEIGHT_KEY = 'tao-forge-timeline-height';
+const INSIGHT_WIDTH_KEY = 'tao-forge-insight-width';
+
+function initInsightResize() {
+  const saved = localStorage.getItem(INSIGHT_WIDTH_KEY);
+  if (saved) {
+    const px = parseInt(saved, 10);
+    const maxW = Math.floor(window.innerWidth * 0.25);
+    if (px >= 200 && px <= maxW) {
+      document.querySelector('.app-body').style.setProperty('--insight-width', px + 'px');
+    }
+  }
+
+  const handle = document.getElementById('insightResizeHandle');
+  if (!handle) return;
+
+  let dragging = false;
+
+  handle.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    dragging = true;
+    handle.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const appBody = document.querySelector('.app-body');
+    const rect = appBody.getBoundingClientRect();
+    let width = rect.right - e.clientX;
+    const maxW = Math.floor(window.innerWidth * 0.25);
+    width = Math.max(200, Math.min(maxW, width));
+    appBody.style.setProperty('--insight-width', width + 'px');
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    handle.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    const appBody = document.querySelector('.app-body');
+    const current = getComputedStyle(appBody).getPropertyValue('--insight-width').trim();
+    try { localStorage.setItem(INSIGHT_WIDTH_KEY, current); } catch {}
+  });
+}
+
+function initTimelineResize() {
+  const saved = localStorage.getItem(TIMELINE_HEIGHT_KEY);
+  if (saved) {
+    const px = parseInt(saved, 10);
+    const maxH = Math.floor(window.innerHeight * 0.33);
+    if (px >= 80 && px <= maxH) {
+      dom.timelineDock.style.setProperty('--timeline-height', px + 'px');
+    }
+  }
+
+  const handle = document.getElementById('timelineResizeHandle');
+  if (!handle) return;
+
+  let dragging = false;
+
+  handle.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    dragging = true;
+    handle.classList.add('dragging');
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    let height = window.innerHeight - e.clientY;
+    const maxH = Math.floor(window.innerHeight * 0.33);
+    height = Math.max(80, Math.min(maxH, height));
+    dom.timelineDock.style.setProperty('--timeline-height', height + 'px');
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    handle.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    const current = getComputedStyle(dom.timelineDock).getPropertyValue('--timeline-height').trim();
+    try { localStorage.setItem(TIMELINE_HEIGHT_KEY, current); } catch {}
+  });
 }
