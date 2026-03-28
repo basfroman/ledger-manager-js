@@ -14,24 +14,24 @@ function readFile(path) {
 }
 
 describe('Gate 7 — UI Style Consistency', () => {
-  it(':root defines ledger accent defaults (--accent-rgb)', () => {
+  it(':root defines wallet accent defaults (--accent-rgb)', () => {
     const css = readFile(STYLES_PATH);
     expect(css).toMatch(/:root\s*\{[^}]*--accent-rgb/s);
     expect(css).toMatch(/:root\s*\{[^}]*--accent:/s);
   });
 
-  it('body[data-account-source="wallet"] overrides accent for wallet mode', () => {
+  it('body[data-account-source="ledger"] overrides accent for ledger mode', () => {
     const css = readFile(STYLES_PATH);
-    expect(css).toContain('body[data-account-source="wallet"]');
-    expect(css).toMatch(/data-account-source="wallet"\]\s*\{[^}]*--accent-rgb/s);
+    expect(css).toContain('body[data-account-source="ledger"]');
+    expect(css).toMatch(/data-account-source="ledger"\]\s*\{[^}]*--accent-rgb/s);
   });
 
-  it('accent CSS variables defined in :root (ledger default) and wallet override', () => {
+  it('accent CSS variables defined in :root (wallet default) and ledger override', () => {
     const css = readFile(STYLES_PATH);
     const rootHasAccent = /:root\s*\{[^}]*--accent-rgb/.test(css);
-    const walletBlock = css.includes('data-account-source="wallet"');
+    const ledgerBlock = css.includes('data-account-source="ledger"');
     expect(rootHasAccent).toBe(true);
-    expect(walletBlock).toBe(true);
+    expect(ledgerBlock).toBe(true);
   });
 
   it('panel-locked class is defined in CSS', () => {
@@ -77,5 +77,15 @@ describe('Gate 7 — UI Style Consistency', () => {
     for (const cls of ['state-pass', 'state-warn', 'state-fail', 'state-busy']) {
       expect(css, `Missing CSS class: ${cls}`).toContain(`.${cls}`);
     }
+  });
+
+  it('route panels with ID-based display rules guard with :not(.hidden)', () => {
+    const css = readFile(STYLES_PATH);
+    const idDisplayRe = /#route\w+\s*\{[^}]*display\s*:/g;
+    const matches = css.match(idDisplayRe) || [];
+    expect(
+      matches,
+      'ID-based display rules on route panels override .hidden — use :not(.hidden) instead',
+    ).toEqual([]);
   });
 });

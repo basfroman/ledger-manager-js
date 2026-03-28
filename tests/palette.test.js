@@ -100,15 +100,15 @@ describe('keyboard navigation', () => {
     dom.paletteSearch.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
     let active = dom.paletteResults.querySelector('.palette-active');
     expect(active).not.toBeNull();
-    expect(active.querySelector('.palette-label').textContent).toBe('Compose');
+    expect(active.querySelector('.palette-label').textContent).toBe('Explorer');
 
     dom.paletteSearch.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
     active = dom.paletteResults.querySelector('.palette-active');
-    expect(active.querySelector('.palette-label').textContent).toBe('Data Hub');
+    expect(active.querySelector('.palette-label').textContent).toBe('Compose');
 
     dom.paletteSearch.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
     active = dom.paletteResults.querySelector('.palette-active');
-    expect(active.querySelector('.palette-label').textContent).toBe('Compose');
+    expect(active.querySelector('.palette-label').textContent).toBe('Explorer');
   });
 
   it('Enter dispatches the active entry', () => {
@@ -122,6 +122,6 @@ describe('keyboard navigation', () => {
     dom.paletteSearch.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
     dom.paletteSearch.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
 
-    expect(state.activeRoute).toBe(ROUTES.DATA_HUB);
+    expect(state.activeRoute).toBe(ROUTES.COMPOSE);
   });
 });

@@ -1,6 +1,6 @@
 import {
+  buildCallDocHtml,
   chainSupportsMetadataHash,
-  formatDocs,
   getArgTypeName,
   getChainDecimals,
   getChainToken,
@@ -15,7 +15,7 @@ import {
   ledgerErrorMessage,
   normalizeLedgerSignature,
 } from './ledger-manager.js';
-import { ACCOUNT_SOURCE, MERKLE_DECIMALS, MERKLE_TOKEN, MSG_LEDGER_NO_METADATA_HASH } from './constants.js';
+import { ACCOUNT_SOURCE, MERKLE_DECIMALS, MERKLE_TOKEN, MORTAL_ERA_PERIOD, MSG_LEDGER_NO_METADATA_HASH, SIGNING_MODE_METADATA_HASH } from './constants.js';
 import { web3FromAddress } from '@polkadot/extension-dapp';
 import { u8aToHex, merkleizeMetadata } from './deps.js';
 import { monitor } from './accounts.js';
@@ -131,7 +131,7 @@ function createLedgerSigner(apiInst, merkleized, accountIndex, addressOffset) {
   };
 }
 
-async function signAndSendLedger(tx, fromAddr, accountIndex, addressOffset) {
+export async function signAndSendLedger(tx, fromAddr, accountIndex, addressOffset) {
   setTxStatus('Building transaction...', 'busy');
   log(`call hex: ${tx.method.toHex()}`);
   log(`call hash: ${tx.method.hash.toHex()}`);
@@ -153,12 +153,12 @@ async function signAndSendLedger(tx, fromAddr, accountIndex, addressOffset) {
   const signer = createLedgerSigner(state.api, merkleized, accountIndex, addressOffset);
   const signOptions = {
     signer,
-    era: 64,
+    era: MORTAL_ERA_PERIOD,
     withSignedTransaction: true,
-    mode: 1,
+    mode: SIGNING_MODE_METADATA_HASH,
     metadataHash: metadataDigest,
   };
-  log(`signOptions: mode=1, metadataHash=${metadataDigest}`);
+  log(`signOptions: mode=${SIGNING_MODE_METADATA_HASH}, metadataHash=${metadataDigest}`);
 
   log('');
   log('═══ SIGNING ═══');
@@ -167,7 +167,7 @@ async function signAndSendLedger(tx, fromAddr, accountIndex, addressOffset) {
   return broadcastSignedTx(signedTx);
 }
 
-async function signAndSendExtension(tx, address) {
+export async function signAndSendExtension(tx, address) {
   setTxStatus('Building transaction...', 'busy');
   log(`call hex: ${tx.method.toHex()}`);
   log(`call hash: ${tx.method.hash.toHex()}`);
@@ -185,7 +185,7 @@ async function signAndSendExtension(tx, address) {
   return broadcastSignedTx(signedTx);
 }
 
-async function broadcastSignedTx(signedTx) {
+export async function broadcastSignedTx(signedTx) {
   const txHash = signedTx.hash.toHex();
   const fullHex = signedTx.toHex();
   log(`signedTx hash: ${txHash}`);
@@ -198,9 +198,14 @@ async function broadcastSignedTx(signedTx) {
   log('═══ SENDING ═══');
   setTxStatus(`Signed. Broadcasting ${truncAddr(txHash)}...`, 'busy');
 
+  const TX_TIMEOUT_MS = 120_000;
   const result = await new Promise((resolve, reject) => {
     let done = false;
-    const finish = (fn) => { if (done) return; done = true; fn(); };
+    const finish = (fn) => { if (done) return; done = true; clearTimeout(timer); fn(); };
+
+    const timer = setTimeout(() => {
+      finish(() => reject(new Error(`Transaction timed out after ${TX_TIMEOUT_MS / 1000}s without block inclusion`)));
+    }, TX_TIMEOUT_MS);
 
     signedTx.send((submitResult) => {
       if (done) return;
@@ -229,6 +234,10 @@ async function broadcastSignedTx(signedTx) {
       } else if (status.isBroadcast) {
         log('Broadcast to network');
         setTxStatus('Transaction broadcast to network. Waiting for block...', 'busy');
+      } else if (status.isFinalized) {
+        const blockHash = status.asFinalized.toHex();
+        log(`Finalized: ${blockHash}`);
+        setTxStatus('Transaction finalized.', 'busy');
       } else if (status.isInBlock) {
         const blockHash = status.asInBlock.toHex();
         log(`InBlock: ${blockHash}`);
@@ -355,12 +364,16 @@ export function updateExtrinsicSendButton() {
   if (!state.api || !state.selectedAccount || !state.palletSelectValue || !state.methodSelectValue) {
     dom.extrinsicSendBtn.disabled = true;
     dom.feeEstimateBtn.disabled = true;
+    dom.dryRunBtn.disabled = true;
+    dom.addToBatchBtn.disabled = true;
     return;
   }
   const inputs = [...dom.extrinsicArgs.querySelectorAll('[data-arg-name]')];
   const allFilled = inputs.length === 0 || inputs.every(i => i.value?.trim());
   dom.extrinsicSendBtn.disabled = !allFilled;
   dom.feeEstimateBtn.disabled = !allFilled;
+  dom.dryRunBtn.disabled = !allFilled;
+  dom.addToBatchBtn.disabled = !allFilled;
 }
 
 function onPalletChanged(pallet) {
@@ -394,7 +407,7 @@ function onMethodChanged(method) {
   const fn = state.api.tx[pallet][method];
   const meta = fn.meta;
 
-  const docsHtml = formatDocs(meta.docs.map(d => d.toString()));
+  const docsHtml = buildCallDocHtml(meta, state.api.registry);
   if (docsHtml) {
     dom.extrinsicDocs.innerHTML = docsHtml;
     dom.extrinsicDocs.classList.remove('hidden');
@@ -452,6 +465,44 @@ export function selectExtrinsic(pallet, method) {
   });
 }
 
+async function dryRunExtrinsic() {
+  const pallet = state.palletSelectValue;
+  const method = state.methodSelectValue;
+  if (!pallet || !method || !state.api) return;
+
+  dom.dryRunBtn.disabled = true;
+  setTxStatus('Dry running...', 'busy');
+  try {
+    const args = collectArgs();
+    const tx = state.api.tx[pallet][method](...args);
+    const result = await state.api.rpc.system.dryRun(tx.toHex());
+    const str = result.toString();
+    if (result.isOk) {
+      const inner = result.asOk;
+      if (inner.isOk) {
+        setTxStatus('Dry run: Would succeed ✓', 'ok');
+      } else {
+        let errText = inner.asErr.toString();
+        try {
+          if (inner.asErr.isModule) {
+            const decoded = state.api.registry.findMetaError(inner.asErr.asModule);
+            errText = `${decoded.section}.${decoded.name}: ${decoded.docs.join(' ')}`;
+          }
+        } catch {}
+        setTxStatus(`Dry run: Would fail — ${errText}`, 'err');
+      }
+    } else {
+      setTxStatus(`Dry run: Transaction invalid — ${str}`, 'err');
+    }
+    log(`Dry run result: ${str}`);
+  } catch (err) {
+    setTxStatus(`Dry run error: ${err.message}`, 'err');
+    log(`Dry run error: ${err.message}`);
+  } finally {
+    dom.dryRunBtn.disabled = false;
+  }
+}
+
 export function initTx() {
   setupCustomDropdown(dom.palletSelectTrigger, dom.palletSelectDropdown, 'palletSelectWrap', (value) => {
     state.palletSelectValue = value;
@@ -462,6 +513,8 @@ export function initTx() {
     state.methodSelectValue = value;
     onMethodChanged(value);
   });
+
+  dom.dryRunBtn.addEventListener('click', dryRunExtrinsic);
 
   dom.feeEstimateBtn.addEventListener('click', async () => {
     if (!state.api || !state.selectedAccount) return;

@@ -1,5 +1,5 @@
 import { chainSupportsMetadataHash, getChainToken, isDevChain } from './chain-utils.js';
-import { NETWORK_PRESETS } from './constants.js';
+import { LS_LAST_ENDPOINT, NETWORK_PRESETS } from './constants.js';
 import { state } from './state.js';
 import { dom, positionDropdown, setStatus } from './ui.js';
 import { pushTimelineEvent } from './timeline.js';
@@ -11,15 +11,21 @@ export function getRpcUrl() {
     : state.networkPresetValue;
 }
 
-/** Fills #networkPresetDropdown from NETWORK_PRESETS and syncs trigger to first (or selected) preset. */
+/** Fills #networkPresetDropdown from NETWORK_PRESETS and syncs trigger to saved (or first) preset. */
 export function renderNetworkPresetOptions() {
   const dd = dom.networkPresetDropdown;
   dd.innerHTML = '';
+  const savedUrl = localStorage.getItem(LS_LAST_ENDPOINT);
+  let selectedIdx = 0;
+  if (savedUrl) {
+    const idx = NETWORK_PRESETS.findIndex(p => p.url === savedUrl);
+    if (idx >= 0) selectedIdx = idx;
+  }
   for (let i = 0; i < NETWORK_PRESETS.length; i++) {
     const { label, url } = NETWORK_PRESETS[i];
     const div = document.createElement('div');
     div.className = 'custom-select-option';
-    if (i === 0) div.classList.add('selected');
+    if (i === selectedIdx) div.classList.add('selected');
     div.dataset.value = url;
     if (url === 'custom') {
       div.innerHTML = `<span class="custom-select-label">${label}</span>`;
@@ -28,12 +34,12 @@ export function renderNetworkPresetOptions() {
     }
     dd.appendChild(div);
   }
-  const first = NETWORK_PRESETS[0];
-  state.networkPresetValue = first.url;
-  dom.networkPresetTrigger.querySelector('.custom-select-label').textContent = first.label;
+  const preset = NETWORK_PRESETS[selectedIdx];
+  state.networkPresetValue = preset.url;
+  dom.networkPresetTrigger.querySelector('.custom-select-label').textContent = preset.label;
   const triggerUrl = dom.networkPresetTrigger.querySelector('.custom-select-url');
-  triggerUrl.textContent = first.url === 'custom' ? '' : first.url;
-  dom.customUrlWrap.classList.toggle('hidden', first.url !== 'custom');
+  triggerUrl.textContent = preset.url === 'custom' ? '' : preset.url;
+  dom.customUrlWrap.classList.toggle('hidden', preset.url !== 'custom');
 }
 
 export function initNetwork({ onConnected, onDisconnected }) {
@@ -101,6 +107,7 @@ export function initNetwork({ onConnected, onDisconnected }) {
       dom.disconnectBtn.classList.add('btn-active');
       dom.networkPresetTrigger.disabled = true;
       dom.customUrl.disabled = true;
+      try { localStorage.setItem(LS_LAST_ENDPOINT, url); } catch {}
       pushTimelineEvent('info', `Connected to ${url}`);
       onConnected();
     } catch (err) {

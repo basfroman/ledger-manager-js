@@ -77,7 +77,8 @@ export function parseTypedArgs(argDefs, values) {
 }
 
 export function escapeHtml(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const str = String(s ?? '');
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 export function highlightJson(json) {
@@ -93,22 +94,28 @@ export function highlightJson(json) {
   );
 }
 
+function cleanDashes(s) {
+  return s
+    .replace(/\s*[—–\-]\s*[—–\-]\s*/g, ' — ')
+    .replace(/\s*:\s*[—–\-]\s*/g, ' — ')
+    .replace(/^\s*[—–\-]\s+/, '');
+}
+
+const BACKTICK_CODE_RE = new RegExp('`([^`]+)`', 'g');
+
+function inlineDocs(s) {
+  return escapeHtml(cleanDashes(s))
+    .replace(BACKTICK_CODE_RE, '<code>$1</code>')
+    .replace(/'([A-Z]\w+)'/g, '<code>$1</code>');
+}
+
 export function formatDocs(docStrings) {
   if (!docStrings?.length) return '';
   const text = docStrings.map(d => String(d)).join('\n');
   const trimmed = text.trim();
   if (!trimmed) return '';
 
-  const cleanDashes = s => s
-    .replace(/\s*[—–\-]\s*[—–\-]\s*/g, ' — ')
-    .replace(/\s*:\s*[—–\-]\s*/g, ' — ')
-    .replace(/^\s*[—–\-]\s+/, '');
-  const inline = s => escapeHtml(cleanDashes(s))
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/'([A-Z]\w+)'/g, '<code>$1</code>');
-
   const sectionRe = /^#\s+(.+?):\s*/;
-  const itemRe = /^\*\s+(.+)/;
 
   const sections = [];
   let currentSection = { title: null, lines: [] };
@@ -134,21 +141,21 @@ export function formatDocs(docStrings) {
 
     if (!sec.title) {
       const paras = joinParagraphs(sec.lines);
-      if (paras[0]) html += `<div class="doc-summary">${inline(paras[0])}</div>`;
+      if (paras[0]) html += '<div class="doc-summary">' + inlineDocs(paras[0]) + '</div>';
       for (let i = 1; i < paras.length; i++) {
-        html += `<p class="doc-para">${inline(paras[i])}</p>`;
+        html += '<p class="doc-para">' + inlineDocs(paras[i]) + '</p>';
       }
       continue;
     }
 
-    html += `<div class="doc-section">`;
-    html += `<div class="doc-section-title">${escapeHtml(sec.title)}</div>`;
+    html += '<div class="doc-section">';
+    html += '<div class="doc-section-title">' + escapeHtml(sec.title) + '</div>';
 
     const items = parseItems(sec.lines);
     if (items.length) {
       html += '<ul class="doc-list">';
       for (const item of items) {
-        html += `<li>${formatItem(item, inline)}</li>`;
+        html += '<li>' + formatItem(item, inlineDocs) + '</li>';
       }
       html += '</ul>';
     }
@@ -176,7 +183,7 @@ function parseItems(lines) {
   const items = [];
   let current = null;
   for (const l of lines) {
-    const m = l.match(/^\*\s+(.*)/);
+    const m = l.match(/^[-*]\s+(.*)/);
     if (m) {
       if (current) items.push(current);
       current = m[1];
@@ -189,6 +196,17 @@ function parseItems(lines) {
 }
 
 function formatItem(raw, inlineFn) {
+  const btNameType = raw.match(/^`(\w+)`\s*\(([^)]+)\)\s*[:\-–—]\s*(.*)/);
+  if (btNameType) {
+    return `<span class="doc-arg-name">${inlineFn(btNameType[1])}</span>`
+      + ` <span class="doc-arg-type">${inlineFn(btNameType[2])}</span>`
+      + (btNameType[3] ? ` <span class="doc-arg-desc">— ${inlineFn(btNameType[3])}</span>` : '');
+  }
+  const btName = raw.match(/^`(\w+)`\s*[:\-–—]\s*(.*)/);
+  if (btName) {
+    return `<span class="doc-arg-name">${inlineFn(btName[1])}</span>`
+      + (btName[2] ? ` <span class="doc-arg-desc">— ${inlineFn(btName[2])}</span>` : '');
+  }
   const nameType = raw.match(/^(\w+)\s*\(([^)]+)\)\s*[:\-–—]\s*(.*)/);
   if (nameType) {
     return `<span class="doc-arg-name">${inlineFn(nameType[1])}</span>`
@@ -207,6 +225,71 @@ function formatItem(raw, inlineFn) {
       + (nameOnly[2] ? ` <span class="doc-arg-desc">— ${inlineFn(nameOnly[2])}</span>` : '');
   }
   return inlineFn(raw);
+}
+
+export function buildCallDocHtml(meta, registry) {
+  const rawDocs = meta.docs?.map(d => d.toString()) || [];
+  const args = [...(meta.args || [])];
+
+  const descLines = [];
+  const paramDescs = {};
+  let hitParams = false;
+  let currentParam = null;
+
+  for (const raw of rawDocs) {
+    const line = raw.trim();
+
+    if (!hitParams) {
+      if (/^(#\s+)?(Parameters|Args|Arguments)\s*:/i.test(line)) {
+        hitParams = true;
+        continue;
+      }
+      if (/^[-*]\s*`\w+`\s*[:\-–—]/.test(line)) {
+        hitParams = true;
+      }
+    }
+
+    if (hitParams) {
+      if (/^#\s+/.test(line)) { currentParam = null; continue; }
+      const m = line.match(/^[-*]\s*`?(\w+)`?\s*[:\-–—]\s*(.*)/);
+      if (m) {
+        currentParam = m[1];
+        paramDescs[currentParam] = m[2].trim();
+      } else if (currentParam && line) {
+        paramDescs[currentParam] += ' ' + line;
+      } else {
+        currentParam = null;
+      }
+    } else {
+      descLines.push(raw);
+    }
+  }
+
+  let html = formatDocs(descLines);
+
+  if (args.length > 0) {
+    html += '<div class="doc-section">';
+    html += '<div class="doc-section-title">Parameters</div>';
+    html += '<ul class="doc-list">';
+    for (const arg of args) {
+      const name = arg.name.toString();
+      const type = getArgTypeName(arg, registry);
+      const desc = paramDescs[name] || '';
+      html += '<li>';
+      html += `<span class="doc-arg-name">${escapeHtml(name)}</span>`;
+      html += ` <span class="doc-arg-type">${escapeHtml(type)}</span>`;
+      if (desc) {
+        const cleanDesc = escapeHtml(desc)
+          .replace(/`([^`]+)`/g, '<code>$1</code>');
+        html += ` <span class="doc-arg-desc">— ${cleanDesc}</span>`;
+      }
+      html += '</li>';
+    }
+    html += '</ul>';
+    html += '</div>';
+  }
+
+  return html;
 }
 
 export async function copyToClipboard(text) {

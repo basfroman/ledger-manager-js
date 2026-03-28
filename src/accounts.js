@@ -15,6 +15,7 @@ import {
   EXTENSION_DISPLAY_LABELS,
   ICON_COPY,
   ICON_CHECK,
+  LS_ACCOUNT_SOURCE,
   RAO_PER_TAO,
   ROUTES,
   SLIP44,
@@ -202,10 +203,12 @@ export function applyAccountSourceUI() {
   dom.walletOnlyWrap.classList.toggle('hidden', ledger);
   if (ledger) {
     syncLedgerLoadButtonsFromMonitor();
+    if (!state.accountsLoaded) setLedgerStatus('No device selected', 'neutral');
   } else {
     dom.loadAccountsBtn.disabled = true;
     dom.loadSingleAccountBtn.disabled = true;
     populateWalletExtensionDropdown();
+    if (!state.accountsLoaded) setLedgerStatus('Click Refresh to detect browser extensions', 'neutral');
   }
   const pathHeader = document.getElementById('pathColHeader');
   if (pathHeader) {
@@ -331,13 +334,18 @@ export async function fetchBalances(accounts) {
   if (!state.api || !accounts.length) return;
   dom.refreshBalancesBtn.disabled = true;
   dom.refreshBalancesBtn.textContent = 'Loading...';
-  for (const acct of accounts) {
-    try {
-      const { data } = await state.api.query.system.account(acct.address);
-      acct.balance = Number(data.free.toBigInt()) / Number(RAO_PER_TAO);
-    } catch {
-      acct.balance = null;
+  try {
+    const addresses = accounts.map(a => a.address);
+    const results = await state.api.query.system.account.multi(addresses);
+    for (let i = 0; i < accounts.length; i++) {
+      try {
+        accounts[i].balance = Number(results[i].data.free.toBigInt()) / Number(RAO_PER_TAO);
+      } catch {
+        accounts[i].balance = null;
+      }
     }
+  } catch {
+    for (const acct of accounts) acct.balance = null;
   }
   renderAccounts(state.lastLoadedAccounts);
   dom.refreshBalancesBtn.textContent = 'Refresh Balances';
@@ -502,6 +510,7 @@ export function initAccounts({ onAccountsChanged: cb }) {
 
     const hadAccount = Boolean(state.selectedAccount);
     state.accountSource = next;
+    try { localStorage.setItem(LS_ACCOUNT_SOURCE, next); } catch {}
     applyAccountSourceUI();
 
     if (!hadAccount) {
@@ -511,6 +520,9 @@ export function initAccounts({ onAccountsChanged: cb }) {
 
     onAccountsChanged();
   });
+  for (const b of dom.accountSourceToggle.querySelectorAll('button')) {
+    b.classList.toggle('active', b.dataset.mode === state.accountSource);
+  }
   applyAccountSourceUI();
 
   setupCustomDropdown(

@@ -1,11 +1,11 @@
-import { MAX_DRAFTS, ROUTES } from './constants.js';
+import { MAX_DRAFTS, ROUTES, LS_DRAFTS } from './constants.js';
 import { state } from './state.js';
 import { setActiveRoute, setDataHubTab } from './ui.js';
 import { selectExtrinsic } from './tx.js';
 import { selectQuery } from './query.js';
 import { selectConstant } from './constants-viewer.js';
 
-const STORAGE_KEY = 'tao-forge-drafts';
+const STORAGE_KEY = LS_DRAFTS;
 const STORAGE_VERSION = 1;
 
 /**

@@ -5,7 +5,7 @@ export const state = {
   selectedAccount: null,
   accountsLoaded: false,
   lastLoadedAccounts: [],
-  accountSource: ACCOUNT_SOURCE.LEDGER,
+  accountSource: ACCOUNT_SOURCE.WALLET,
   /** Selected `window.injectedWeb3` key before loading accounts (Wallet mode). */
   walletExtensionKey: null,
   networkPresetValue: NETWORK_PRESETS[0].url,
@@ -23,4 +23,12 @@ export const state = {
   explorerSelectedHash: null,
   explorerLive: true,
   explorerUnsub: null,
+  batchQueue: [],
+  watches: [],
+  eventStreamUnsub: null,
+  eventStreamFilter: '',
+  eventStreamEvents: [],
+  finalizedHead: null,
+  finalizedUnsub: null,
+  addressBook: [],
 };

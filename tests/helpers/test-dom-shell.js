@@ -17,8 +17,8 @@ export function mountAppShell() {
   </div>
   <div class="top-bar-section">
     <div class="seg-control seg-control-sm" id="accountSourceToggle">
-      <button type="button" class="active" data-mode="ledger">Ledger</button>
-      <button type="button" data-mode="wallet">Wallet</button>
+      <button type="button" class="active" data-mode="wallet">Wallet</button>
+      <button type="button" data-mode="ledger">Ledger</button>
     </div>
   </div>
   <div class="top-bar-section top-bar-chain">
@@ -48,8 +48,9 @@ export function mountAppShell() {
           <div class="custom-select-dropdown hidden" id="methodSelectDropdown"></div>
         </div>
         <div id="extrinsicArgs"></div>
-        <button id="feeEstimateBtn"></button><button id="extrinsicSendBtn"></button>
+        <button id="feeEstimateBtn"></button><button id="dryRunBtn"></button><button id="addToBatchBtn"></button><button id="extrinsicSendBtn"></button>
         <div id="feeEstimate"></div>
+        <div id="proxyExecWrap" class="hidden"><input type="checkbox" id="proxyExecCheck" /><input id="proxyExecReal" /></div>
         <div id="preflightChecklist"></div>
       </div>
       <div id="txStatus"></div>
@@ -62,6 +63,7 @@ export function mountAppShell() {
         <div class="seg-control" id="rightPanelToggle">
           <button type="button" class="active" data-pane="queryPane" data-title="Queries">Queries</button>
           <button type="button" data-pane="constantsPane" data-title="Constants">Constants</button>
+          <button type="button" data-pane="metadataPane" data-title="Metadata">Metadata</button>
         </div>
       </div>
       <div id="queryPane">
@@ -73,8 +75,12 @@ export function mountAppShell() {
           <button class="custom-select-trigger" id="qStorageSelectTrigger" type="button"><span class="custom-select-label"></span></button>
           <div class="custom-select-dropdown hidden" id="qStorageSelectDropdown"></div>
         </div>
-        <div id="queryKeys"></div><button id="queryExecuteBtn"></button>
+        <div id="queryKeys"></div>
+        <input id="queryAtBlock" /><label><input type="checkbox" id="queryCompare" /></label>
+        <button id="queryExecuteBtn"></button>
         <div id="queryResultWrap"><div class="log-wrap"><button class="log-copy-btn" id="queryResultCopyBtn"></button><pre id="queryResult"></pre></div></div>
+        <div id="watchPanel"></div>
+        <div id="mapBrowserWrap" class="hidden"></div>
       </div>
       <div id="constantsPane" class="hidden">
         <div class="custom-select" id="cPalletSelectWrap">
@@ -87,15 +93,11 @@ export function mountAppShell() {
         </div>
         <div id="constantResultWrap"><div class="log-wrap"><button class="log-copy-btn" id="constantResultCopyBtn"></button><pre id="constantResult"></pre></div></div>
       </div>
+      <div id="metadataPane" class="hidden"></div>
     </div>
     <div id="routeAccounts" class="hidden" role="tabpanel">
       <section id="sourceSection">
-        <div id="ledgerOnlyWrap">
-          <button id="addDeviceBtn"></button><button id="loadAccountsBtn"></button>
-          <input id="singleAccountIndex" /><button id="loadSingleAccountBtn"></button>
-          <table><tbody id="deviceListBody"></tbody></table>
-        </div>
-        <div id="walletOnlyWrap" class="hidden">
+        <div id="walletOnlyWrap">
           <div class="custom-select wallet-extension-select-wrap" id="walletExtensionWrap">
             <button type="button" class="custom-select-trigger" id="walletExtensionTrigger" aria-expanded="false">
               <span class="custom-select-label">— Choose extension —</span>
@@ -106,29 +108,59 @@ export function mountAppShell() {
           <p id="walletExtensionHint"></p>
           <button id="loadExtensionAccountsBtn"></button>
         </div>
+        <div id="ledgerOnlyWrap" class="hidden">
+          <button id="addDeviceBtn"></button><button id="loadAccountsBtn"></button>
+          <input id="singleAccountIndex" /><button id="loadSingleAccountBtn"></button>
+          <table><tbody id="deviceListBody"></tbody></table>
+        </div>
         <div id="ledgerStatus"></div>
       </section>
       <section id="accountsSection" class="panel-locked">
         <h2 id="accountsTitle">Accounts</h2>
         <button id="refreshBalancesBtn"></button>
-        <div class="accounts-scroll"><table><tbody id="accountsBody"></tbody></table></div>
+        <div class="accounts-scroll"><table><thead><tr><th>#</th><th>Address</th><th id="pathColHeader">Wallet / Key name</th><th>Balance (TAO)</th><th></th></tr></thead><tbody id="accountsBody"></tbody></table></div>
       </section>
+      <div id="accountXRay" class="hidden"></div>
+      <div id="proxyManager" class="hidden"></div>
+      <details id="addressBookSection"><summary>Address Book</summary><div id="addressBookContent"></div></details>
     </div>
     <div id="routeExplorer" role="tabpanel">
+      <div class="explorer-toolbar">
+        <input id="explorerSearchInput" />
+        <button id="explorerSearchBtn"></button>
+        <button id="explorerLiveBtn"></button>
+        <div class="seg-control seg-control-sm" id="explorerViewToggle">
+          <button type="button" class="active" data-view="blocks">Blocks</button>
+          <button type="button" data-view="events">Events</button>
+        </div>
+      </div>
       <div class="explorer-split">
         <div class="explorer-list-pane">
-          <div class="explorer-toolbar">
-            <input id="explorerSearchInput" />
-            <button id="explorerSearchBtn"></button>
-            <button id="explorerLiveBtn"></button>
-          </div>
           <div id="explorerBlockList"></div>
+          <div id="eventStreamPane" class="hidden">
+            <input id="eventStreamFilter" />
+            <div id="eventStreamList"></div>
+          </div>
         </div>
         <div id="explorerDetailPane"></div>
       </div>
     </div>
     <div id="routeDiagnostics" class="hidden" role="tabpanel">
+      <div id="chainHealth"></div>
       <div id="diagnosticsCard"></div>
+      <div id="nonceInfo"></div>
+      <details class="decode-section">
+        <summary>Hex Decoder</summary>
+        <textarea id="decodeInput"></textarea>
+        <div class="custom-select" id="decodeTypeHintWrap">
+          <button class="custom-select-trigger" id="decodeTypeHintTrigger" type="button"><span class="custom-select-label">Auto-detect</span></button>
+          <div class="custom-select-dropdown hidden" id="decodeTypeHintDropdown">
+            <div class="custom-select-option selected" data-value="auto"><span class="custom-select-label">Auto-detect</span></div>
+          </div>
+        </div>
+        <button id="decodeBtn"></button>
+        <div id="decodeResult"></div>
+      </details>
       <section id="logSection">
         <div class="log-wrap"><button class="log-copy-btn" id="logCopyBtn"></button><pre class="log-panel" id="logPanel"></pre></div>
       </section>
@@ -137,15 +169,18 @@ export function mountAppShell() {
   <aside id="insightRail" class="insight-rail">
     <div class="insight-resize-handle" id="insightResizeHandle"></div>
     <div id="insightContent"></div>
+    <div class="doc-block hidden" id="explorerDocs" data-insight-route="explorer"></div>
     <div class="doc-block hidden" id="extrinsicDocs" data-insight-route="compose"></div>
     <div class="doc-block hidden" id="queryDocs" data-insight-route="dataHub"></div>
     <div class="doc-block hidden" id="constantDocs" data-insight-route="dataHub"></div>
+    <div class="doc-block hidden" id="metadataDocs" data-insight-route="dataHub"></div>
   </aside>
 </div>
 <div id="timelineDock" class="timeline-dock">
   <div class="section-header">
     <button type="button" id="footerCollapseBtn">Collapse</button>
   </div>
+  <div id="batchList" class="batch-list hidden"></div>
   <div id="timelineList" class="timeline-list" role="log" aria-live="polite"></div>
 </div>
 <div id="commandPalette" class="command-palette-overlay hidden">

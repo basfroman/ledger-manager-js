@@ -60,4 +60,11 @@ describe('Gate 3 — Consistency', () => {
       expect(btn.getAttribute('role')).toBe('tab');
     }
   });
+
+  it('no native <select> or <datalist> elements exist in the app shell', () => {
+    const selects = document.querySelectorAll('select');
+    const datalists = document.querySelectorAll('datalist');
+    expect(selects.length, 'Native <select> elements are forbidden — use custom-select').toBe(0);
+    expect(datalists.length, 'Native <datalist> elements are forbidden — use custom-select').toBe(0);
+  });
 });

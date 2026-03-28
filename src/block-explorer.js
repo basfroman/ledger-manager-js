@@ -1,7 +1,11 @@
 import { ROUTES, MAX_EXPLORER_BLOCKS, ICON_COPY, ICON_CHECK, COPY_FEEDBACK_MS } from './constants.js';
-import { getChainDecimals, getChainToken, truncAddr, copyToClipboard, escapeHtml } from './chain-utils.js';
+import { buildCallDocHtml, formatDocs, getChainDecimals, getChainToken, truncAddr, copyToClipboard, escapeHtml } from './chain-utils.js';
 import { state } from './state.js';
-import { dom } from './ui.js';
+import { dom, setActiveRoute } from './ui.js';
+import { selectExtrinsic } from './tx.js';
+import { getContactName } from './address-book.js';
+
+const ICON_FILTER = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
 
 const ICON_HEADER = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>';
 const ICON_EXTRINSICS = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>';
@@ -89,18 +93,6 @@ function collapsibleSection(iconHtml, title, { collapsed = false } = {}) {
 
   section.append(header, body);
   return { section, body };
-}
-
-function sectionHeader(iconHtml, title) {
-  const div = document.createElement('div');
-  div.className = 'explorer-section-header';
-  const iconSpan = document.createElement('span');
-  iconSpan.innerHTML = iconHtml;
-  div.appendChild(iconSpan);
-  const h3 = document.createElement('h3');
-  h3.textContent = title;
-  div.appendChild(h3);
-  return div;
 }
 
 function createBlockRow(block) {
@@ -211,6 +203,13 @@ export async function activateExplorer() {
   } catch (err) {
     dom.explorerBlockList.innerHTML = `<div class="explorer-placeholder">Subscription error: ${escapeHtml(err.message)}</div>`;
   }
+
+  try {
+    state.finalizedUnsub = await state.api.rpc.chain.subscribeFinalizedHeads((header) => {
+      state.finalizedHead = header.number.toNumber();
+      updateFinalityBadges();
+    });
+  } catch { /* finality subscription optional */ }
 }
 
 export function deactivateExplorer() {
@@ -218,6 +217,11 @@ export function deactivateExplorer() {
     state.explorerUnsub();
     state.explorerUnsub = null;
   }
+  if (state.finalizedUnsub) {
+    state.finalizedUnsub();
+    state.finalizedUnsub = null;
+  }
+  state.finalizedHead = null;
   stopAgeTimer();
   state.explorerBlocks = [];
   state.explorerSelectedHash = null;
@@ -276,8 +280,17 @@ export async function fetchAndShowBlock(hashOrNumber, { smooth = false } = {}) {
 
     if (smooth) {
       const scrollTop = dom.explorerDetailPane.scrollTop;
+      const prevFilter = dom.explorerDetailPane.querySelector('.explorer-filter-input');
+      const savedFilter = prevFilter ? prevFilter.value : '';
       dom.explorerDetailPane.classList.remove('detail-refreshing');
       renderBlockDetail(signedBlock, eventsRaw, timestampRaw, blockHash);
+      if (savedFilter) {
+        const newFilter = dom.explorerDetailPane.querySelector('.explorer-filter-input');
+        if (newFilter) {
+          newFilter.value = savedFilter;
+          newFilter.dispatchEvent(new Event('input'));
+        }
+      }
       dom.explorerDetailPane.scrollTop = Math.min(scrollTop, dom.explorerDetailPane.scrollHeight);
       void dom.explorerDetailPane.offsetWidth;
       dom.explorerDetailPane.classList.add('detail-refreshing');
@@ -301,34 +314,80 @@ function renderBlockDetail(signedBlock, events, timestamp, blockHash) {
   const header = block.header;
   const blockNum = header.number.toNumber();
 
-  const container = document.createElement('div');
+  const stickyHeader = document.createElement('div');
+  stickyHeader.className = 'explorer-detail-header';
 
-  const title = document.createElement('div');
-  title.className = 'explorer-block-title';
-  title.textContent = `Block #${blockNum.toLocaleString()}`;
-  container.appendChild(title);
+  const topRow = document.createElement('div');
+  topRow.className = 'explorer-detail-toprow';
 
-  const meta = document.createElement('div');
-  meta.className = 'explorer-block-meta';
+  const prevBtn = document.createElement('button');
+  prevBtn.className = 'btn-secondary btn-sm';
+  prevBtn.textContent = '←';
+  prevBtn.title = 'Previous block';
+  prevBtn.addEventListener('click', () => { stopLive(); fetchAndShowBlock(blockNum - 1); });
+
+  const titleEl = document.createElement('span');
+  titleEl.className = 'explorer-block-title';
+  titleEl.textContent = `Block #${blockNum.toLocaleString()}`;
+
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'btn-secondary btn-sm';
+  nextBtn.textContent = '→';
+  nextBtn.title = 'Next block';
+  nextBtn.addEventListener('click', () => { stopLive(); fetchAndShowBlock(blockNum + 1); });
+
   const tsDate = new Date(timestamp.toNumber());
-  meta.innerHTML = `<span>${tsDate.toLocaleString()}</span><span>${block.extrinsics.length} extrinsics</span><span>${events.length} events</span><span>${header.digest.logs.length} digest logs</span>`;
-  container.appendChild(meta);
+  const metaEl = document.createElement('span');
+  metaEl.className = 'explorer-block-meta-inline';
+  metaEl.textContent = `${tsDate.toLocaleString()} · ${block.extrinsics.length} ext · ${events.length} events`;
+
+  const finalityBadge = document.createElement('span');
+  if (state.finalizedHead != null) {
+    const isFinalized = blockNum <= state.finalizedHead;
+    finalityBadge.className = `finality-badge ${isFinalized ? 'finality-badge-finalized' : 'finality-badge-pending'}`;
+    finalityBadge.textContent = isFinalized ? 'Finalized' : 'Pending';
+  }
+
+  topRow.append(prevBtn, titleEl, nextBtn, finalityBadge, metaEl);
+
+  const filterRow = document.createElement('div');
+  filterRow.className = 'explorer-filter-row';
+  const filterIcon = document.createElement('span');
+  filterIcon.className = 'explorer-filter-icon';
+  filterIcon.innerHTML = ICON_FILTER;
+  const filterInput = document.createElement('input');
+  filterInput.className = 'explorer-filter-input';
+  filterInput.placeholder = 'Filter: transfer, Balances*, sudo...';
+  const filterCount = document.createElement('span');
+  filterCount.className = 'explorer-filter-count';
+  filterRow.append(filterIcon, filterInput, filterCount);
+
+  stickyHeader.append(topRow, filterRow);
+
+  const container = document.createElement('div');
 
   container.appendChild(renderHeaderSection(header, blockHash));
   container.appendChild(renderExtrinsicsSection(block.extrinsics, events));
   const sysEvents = renderSystemEventsSection(events);
   if (sysEvents) container.appendChild(sysEvents);
   container.appendChild(renderDigestSection(header.digest.logs));
-  container.appendChild(renderNavBar(blockNum));
 
   dom.explorerDetailPane.innerHTML = '';
+  dom.explorerDetailPane.appendChild(stickyHeader);
   dom.explorerDetailPane.appendChild(container);
+
+  updateExplorerInsight({ type: 'block', blockNum, timestamp: tsDate, extrinsicCount: block.extrinsics.length, eventCount: events.length, digestCount: header.digest.logs.length, blockHash });
+
+  filterInput.addEventListener('input', () => {
+    applyDetailFilter(filterInput.value, container, filterCount);
+  });
 }
 
 function renderHeaderSection(header, blockHash) {
-  const section = document.createElement('div');
-  section.className = 'explorer-section';
-  section.appendChild(sectionHeader(ICON_HEADER, 'Header'));
+  const { section, body } = collapsibleSection(ICON_HEADER, 'Header', { collapsed: false });
+
+  const grid = document.createElement('div');
+  grid.className = 'explorer-header-grid';
 
   const hashFields = [
     ['Block Hash', blockHash],
@@ -338,16 +397,17 @@ function renderHeaderSection(header, blockHash) {
   ];
 
   for (const [label, value] of hashFields) {
-    addKvRow(section, label, makeHashEl(value, false));
+    addKvRow(grid, label, makeHashEl(value, false));
   }
 
   try {
-    addKvText(section, 'Spec Version', state.api.runtimeVersion.specVersion.toString());
+    addKvText(grid, 'Spec Version', state.api.runtimeVersion.specVersion.toString());
   } catch {}
   try {
-    addKvText(section, 'Digest Logs', `${header.digest.logs.length}`);
+    addKvText(grid, 'Digest Logs', `${header.digest.logs.length}`);
   } catch {}
 
+  body.appendChild(grid);
   return section;
 }
 
@@ -390,11 +450,28 @@ function renderExtrinsicCard(ext, index, allEvents) {
   badge.className = isSigned ? 'extrinsic-badge extrinsic-badge-signed' : 'extrinsic-badge extrinsic-badge-inherent';
   badge.textContent = isSigned ? 'signed' : 'inherent';
 
-  headerEl.append(chevron, indexEl, methodEl, badge);
+  const cloneBtn = document.createElement('button');
+  cloneBtn.className = 'btn-secondary btn-sm extrinsic-clone-btn';
+  cloneBtn.textContent = '⎘ Clone';
+  cloneBtn.title = 'Clone to Exec';
+  cloneBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    cloneExtrinsicToExec(palletName, methodName, method);
+  });
+
+  headerEl.append(chevron, indexEl, methodEl, badge, cloneBtn);
 
   headerEl.addEventListener('click', () => {
     card.classList.toggle('expanded');
     chevron.style.transform = card.classList.contains('expanded') ? 'rotate(90deg)' : '';
+    if (card.classList.contains('expanded') && state.api) {
+      let docsHtml = '';
+      try {
+        const fn = state.api.tx[palletName]?.[methodName];
+        if (fn?.meta) docsHtml = buildCallDocHtml(fn.meta, state.api.registry);
+      } catch {}
+      updateExplorerInsight({ type: 'extrinsic', pallet: palletName, method: methodName, signed: isSigned, docsHtml });
+    }
   });
 
   const body = document.createElement('div');
@@ -410,13 +487,21 @@ function renderExtrinsicCard(ext, index, allEvents) {
   } catch {}
 
   if (isSigned) {
+    const signerAddr = ext.signer.toString();
     const signer = document.createElement('div');
     signer.className = 'extrinsic-signer';
     const signerLabel = document.createElement('span');
     signerLabel.className = 'extrinsic-signer-label';
     signerLabel.textContent = 'Signer: ';
     signer.appendChild(signerLabel);
-    signer.appendChild(makeHashEl(ext.signer.toString(), false));
+    signer.appendChild(makeHashEl(signerAddr, false));
+    const contactName = getContactName(signerAddr);
+    if (contactName) {
+      const tag = document.createElement('span');
+      tag.className = 'address-tag';
+      tag.textContent = contactName;
+      signer.appendChild(tag);
+    }
     body.appendChild(signer);
 
     try { addKvText(body, 'Nonce', ext.nonce.toString()); } catch {}
@@ -558,6 +643,17 @@ function renderEventCard(ev) {
   headerEl.addEventListener('click', () => {
     card.classList.toggle('expanded');
     chevron.style.transform = card.classList.contains('expanded') ? 'rotate(90deg)' : '';
+    if (card.classList.contains('expanded') && state.api) {
+      let docsHtml = '';
+      try {
+        const evMeta = state.api.events[ev.event.section]?.[ev.event.method]?.meta;
+        if (evMeta) {
+          const rawDocs = evMeta.docs?.map(d => d.toString()) || [];
+          docsHtml = formatDocs(rawDocs);
+        }
+      } catch {}
+      updateExplorerInsight({ type: 'event', section: ev.event.section, method: ev.event.method, docsHtml });
+    }
   });
 
   card.append(headerEl, cardBody);
@@ -639,28 +735,135 @@ function renderDigestSection(logs) {
   return section;
 }
 
-function renderNavBar(blockNum) {
-  const nav = document.createElement('div');
-  nav.className = 'explorer-nav-bar';
-
-  const prevBtn = document.createElement('button');
-  prevBtn.className = 'btn-secondary btn-sm';
-  prevBtn.textContent = '← Prev';
-  prevBtn.addEventListener('click', () => navigateBlock(blockNum - 1));
-
-  const nextBtn = document.createElement('button');
-  nextBtn.className = 'btn-secondary btn-sm';
-  nextBtn.textContent = 'Next →';
-  nextBtn.addEventListener('click', () => navigateBlock(blockNum + 1));
-
-  nav.append(prevBtn, nextBtn);
-  return nav;
+export function parseFilterTerms(query) {
+  if (!query || !query.trim()) return [];
+  return query.split(',')
+    .map(t => t.trim())
+    .filter(Boolean)
+    .map(t => {
+      const pattern = t.replace(/[.*+?^${}()|[\]\\]/g, (m) => m === '*' ? '.*' : `\\${m}`);
+      try { return new RegExp(pattern, 'i'); } catch { return null; }
+    })
+    .filter(Boolean);
 }
 
-function navigateBlock(blockNum) {
-  if (blockNum < 0) return;
-  stopLive();
-  fetchAndShowBlock(blockNum);
+export function applyDetailFilter(query, container, countEl) {
+  const terms = parseFilterTerms(query);
+  const sections = container.querySelectorAll('.explorer-section');
+  let total = 0;
+  let visible = 0;
+
+  for (const section of sections) {
+    const cards = section.querySelectorAll('.extrinsic-card');
+    if (cards.length === 0) {
+      section.style.display = '';
+      continue;
+    }
+
+    let sectionVisible = 0;
+    for (const card of cards) {
+      total++;
+      if (terms.length === 0) {
+        card.style.display = '';
+        sectionVisible++;
+        visible++;
+        continue;
+      }
+      const text = card.textContent;
+      const match = terms.some(re => re.test(text));
+      card.style.display = match ? '' : 'none';
+      if (match) { sectionVisible++; visible++; }
+    }
+
+    const toggle = section.querySelector('.explorer-section-toggle');
+    if (terms.length > 0 && sectionVisible === 0) {
+      section.style.display = 'none';
+    } else {
+      section.style.display = '';
+      if (sectionVisible > 0 && section.classList.contains('section-collapsed') && toggle) {
+        toggle.click();
+      }
+    }
+  }
+
+  if (terms.length === 0) {
+    countEl.textContent = '';
+  } else {
+    countEl.textContent = `${visible}/${total}`;
+  }
+}
+
+export function updateExplorerInsight(info) {
+  if (!dom.explorerDocs) return;
+  let html = '';
+
+  if (info.type === 'block') {
+    html += '<div class="doc-summary">Block Summary</div>';
+    html += '<div class="doc-section"><div class="doc-section-title">Details</div>';
+    html += '<ul class="doc-list">';
+    html += `<li><span class="doc-arg-name">Number</span> <span class="doc-arg-type">#${info.blockNum.toLocaleString()}</span></li>`;
+    html += `<li><span class="doc-arg-name">Timestamp</span> <span class="doc-arg-type">${info.timestamp.toLocaleString()}</span></li>`;
+    html += `<li><span class="doc-arg-name">Extrinsics</span> <span class="doc-arg-type">${info.extrinsicCount}</span></li>`;
+    html += `<li><span class="doc-arg-name">Events</span> <span class="doc-arg-type">${info.eventCount}</span></li>`;
+    html += `<li><span class="doc-arg-name">Digest Logs</span> <span class="doc-arg-type">${info.digestCount}</span></li>`;
+    html += '</ul></div>';
+  } else if (info.type === 'extrinsic') {
+    html += `<div class="doc-summary">${escapeHtml(info.pallet)}.${escapeHtml(info.method)}</div>`;
+    if (info.signed) {
+      html += `<p class="doc-para">Signed extrinsic</p>`;
+    } else {
+      html += `<p class="doc-para">Inherent (unsigned)</p>`;
+    }
+    if (info.docsHtml) html += info.docsHtml;
+  } else if (info.type === 'event') {
+    html += `<div class="doc-summary">${escapeHtml(info.section)}.${escapeHtml(info.method)}</div>`;
+    if (info.docsHtml) html += info.docsHtml;
+  }
+
+  if (html) {
+    dom.explorerDocs.innerHTML = html;
+    dom.explorerDocs.classList.remove('hidden');
+  } else {
+    dom.explorerDocs.textContent = '';
+    dom.explorerDocs.classList.add('hidden');
+  }
+}
+
+export function updateFinalityBadges() {
+  if (state.finalizedHead == null) return;
+  dom.explorerBlockList.querySelectorAll('.explorer-block-row').forEach(row => {
+    const hash = row.dataset.hash;
+    const block = state.explorerBlocks.find(b => b.hash === hash);
+    if (block) {
+      row.classList.toggle('finalized', block.number <= state.finalizedHead);
+    }
+  });
+}
+
+export function cloneExtrinsicToExec(pallet, method, callData) {
+  setActiveRoute(ROUTES.COMPOSE);
+  selectExtrinsic(pallet, method);
+  try {
+    const args = callData.toHuman();
+    if (args && typeof args === 'object') {
+      const inputs = dom.extrinsicArgs?.querySelectorAll('[data-arg-name]') ?? [];
+      for (const input of inputs) {
+        const name = input.dataset.argName;
+        if (args[name] === undefined) continue;
+        const val = args[name];
+        if (typeof val === 'boolean') {
+          const hidden = input.closest('.arg-bool-field')?.querySelector('input[type="hidden"]');
+          if (hidden) {
+            hidden.value = String(val);
+            hidden.dispatchEvent(new Event('input'));
+          }
+        } else {
+          input.value = typeof val === 'object' ? JSON.stringify(val) : String(val);
+          input.dispatchEvent(new Event('input'));
+        }
+      }
+    }
+  } catch { /* toHuman can fail on exotic types */ }
 }
 
 function handleSearch() {

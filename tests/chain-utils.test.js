@@ -4,7 +4,7 @@ import {
   chainSupportsMetadataHash,
   getChainDecimals, getChainToken, isDevChain,
   getArgTypeName, parseTypedArgs,
-  formatDocs, txExplorerUrl,
+  formatDocs, buildCallDocHtml, txExplorerUrl,
   escapeHtml,
   highlightJson,
   TAO_DECIMALS, TOKEN_SYMBOL, FINNEY_GENESIS_HASH,
@@ -332,5 +332,139 @@ describe('highlightJson', () => {
     const out = highlightJson('{"a":1}');
     expect(out).toContain('json-key');
     expect(out).toContain('json-num');
+  });
+});
+
+describe('formatDocs — dash bullets', () => {
+  it('parses - bullets inside a # section', () => {
+    const html = formatDocs([
+      'Summary.',
+      '# Parameters:',
+      '- `delegate`: The proxy account.',
+      '- `pays_fee`: If true, pay fees.',
+    ]);
+    expect(html).toContain('doc-section-title');
+    expect(html).toContain('Parameters');
+    expect(html).toContain('<span class="doc-arg-name">delegate</span>');
+    expect(html).toContain('<span class="doc-arg-name">pays_fee</span>');
+    expect(html).toContain('The proxy account.');
+  });
+
+  it('handles backtick-quoted name with type', () => {
+    const html = formatDocs([
+      'Summary.',
+      '# Args:',
+      '- `amount`(u128) — The transfer amount.',
+    ]);
+    expect(html).toContain('<span class="doc-arg-name">amount</span>');
+    expect(html).toContain('<span class="doc-arg-type">u128</span>');
+    expect(html).toContain('The transfer amount.');
+  });
+});
+
+describe('buildCallDocHtml', () => {
+  const registry = {
+    lookup: { getTypeDef: (id) => ({ type: id === 1 ? 'AccountId32' : 'bool' }) },
+  };
+
+  function mockMeta(docs, args) {
+    return {
+      docs: docs.map(d => ({ toString: () => d })),
+      args: args.map(a => ({
+        name: { toString: () => a.name },
+        typeName: a.typeName ? { toString: () => a.typeName } : null,
+        type: a.typeId ?? 0,
+      })),
+    };
+  }
+
+  it('renders description and structured params', () => {
+    const meta = mockMeta(
+      [
+        'Set fee payment preference for a delegate.',
+        '',
+        'The dispatch origin must be Signed.',
+        'Parameters:',
+        '- `delegate`: The proxy account.',
+        '- `pays_fee`: If `true`, real account pays.',
+      ],
+      [
+        { name: 'delegate', typeName: 'AccountId' },
+        { name: 'pays_fee', typeName: 'bool' },
+      ],
+    );
+    const html = buildCallDocHtml(meta, registry);
+    expect(html).toContain('<div class="doc-summary">');
+    expect(html).toContain('Set fee payment preference');
+    expect(html).toContain('The dispatch origin must be Signed.');
+    expect(html).toContain('<div class="doc-section-title">Parameters</div>');
+    expect(html).toContain('<span class="doc-arg-name">delegate</span>');
+    expect(html).toContain('<span class="doc-arg-type">AccountId</span>');
+    expect(html).toContain('The proxy account.');
+    expect(html).toContain('<span class="doc-arg-name">pays_fee</span>');
+    expect(html).toContain('<span class="doc-arg-type">bool</span>');
+    expect(html).toContain('<code>true</code>');
+    expect(html).not.toContain('Parameters:');
+  });
+
+  it('strips param section from description', () => {
+    const meta = mockMeta(
+      ['Summary.', 'Parameters:', '- `x`: The value.'],
+      [{ name: 'x', typeName: 'u64' }],
+    );
+    const html = buildCallDocHtml(meta, registry);
+    expect(html).toContain('Summary.');
+    expect(html).not.toContain('Parameters:');
+    expect(html).toContain('<span class="doc-arg-name">x</span>');
+    expect(html).toContain('<span class="doc-arg-type">u64</span>');
+    expect(html).toContain('The value.');
+  });
+
+  it('works with no docs', () => {
+    const meta = mockMeta([], [{ name: 'amount', typeName: 'Balance' }]);
+    const html = buildCallDocHtml(meta, registry);
+    expect(html).toContain('<span class="doc-arg-name">amount</span>');
+    expect(html).toContain('<span class="doc-arg-type">Balance</span>');
+  });
+
+  it('works with no args', () => {
+    const meta = mockMeta(['Just a remark call.'], []);
+    const html = buildCallDocHtml(meta, registry);
+    expect(html).toContain('Just a remark call.');
+    expect(html).not.toContain('Parameters');
+  });
+
+  it('handles param bullets without section header', () => {
+    const meta = mockMeta(
+      ['Do something.', '- `val`: The value.'],
+      [{ name: 'val', typeName: 'u32' }],
+    );
+    const html = buildCallDocHtml(meta, registry);
+    expect(html).toContain('Do something.');
+    expect(html).toContain('<span class="doc-arg-name">val</span>');
+    expect(html).toContain('The value.');
+  });
+
+  it('falls back to registry type when typeName is absent', () => {
+    const meta = mockMeta(
+      ['Transfer.'],
+      [{ name: 'dest', typeName: null, typeId: 1 }],
+    );
+    const html = buildCallDocHtml(meta, registry);
+    expect(html).toContain('<span class="doc-arg-type">AccountId32</span>');
+  });
+
+  it('handles multi-line param descriptions', () => {
+    const meta = mockMeta(
+      [
+        'Summary.',
+        'Parameters:',
+        '- `delegate`: The proxy account for which',
+        '  to set the fee payment preference.',
+      ],
+      [{ name: 'delegate', typeName: 'AccountId' }],
+    );
+    const html = buildCallDocHtml(meta, registry);
+    expect(html).toContain('The proxy account for which to set the fee payment preference.');
   });
 });

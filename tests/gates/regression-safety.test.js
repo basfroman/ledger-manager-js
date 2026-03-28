@@ -81,7 +81,7 @@ describe('Gate 9/6 — setActiveRoute coherence', () => {
 
 describe('Gate 9/6 — setDataHubTab coherence', () => {
   it('only one DataHub sub-tab is visible at a time', () => {
-    const panes = ['queryPane', 'constantsPane'];
+    const panes = ['queryPane', 'constantsPane', 'metadataPane'];
     for (const target of panes) {
       setDataHubTab(target);
       const visible = panes.filter(p => !dom[p].classList.contains('hidden'));

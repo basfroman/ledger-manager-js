@@ -1,5 +1,7 @@
-import { getArgTypeName, parseTypedArgs } from './chain-utils.js';
+import { getArgTypeName, parseTypedArgs, truncAddr } from './chain-utils.js';
 import { setupCustomDropdown } from './ui.js';
+import { getContactName } from './address-book.js';
+import { state } from './state.js';
 
 let argBoolSeq = 0;
 
@@ -73,6 +75,7 @@ export function createArgInput(arg, registry, onChange = () => {}) {
     input.inputMode = 'numeric';
   } else if (/accountid|multiaddress|address/i.test(typeName)) {
     input.placeholder = '5...';
+    attachAddressAutocomplete(input);
   } else if (/h256|hash/i.test(typeName)) {
     input.placeholder = '0x...';
   } else {
@@ -82,6 +85,62 @@ export function createArgInput(arg, registry, onChange = () => {}) {
   input.dataset.argName = arg.name.toString();
   input.dataset.argType = tn;
   return input;
+}
+
+function getAddressSuggestions() {
+  const items = [];
+  const seen = new Set();
+  for (const c of state.addressBook || []) {
+    if (seen.has(c.address)) continue;
+    seen.add(c.address);
+    items.push({ address: c.address, label: c.name });
+  }
+  for (const acct of state.lastLoadedAccounts || []) {
+    if (seen.has(acct.address)) continue;
+    seen.add(acct.address);
+    items.push({ address: acct.address, label: acct.derivationPath || `Account #${acct.accountIndex}` });
+  }
+  return items;
+}
+
+function attachAddressAutocomplete(input) {
+  const wrap = document.createElement('div');
+  wrap.className = 'address-autocomplete-wrap';
+  const dd = document.createElement('div');
+  dd.className = 'custom-select-dropdown address-autocomplete-dropdown hidden';
+
+  function rebuild(filter) {
+    dd.innerHTML = '';
+    const suggestions = getAddressSuggestions();
+    const q = (filter || '').toLowerCase();
+    let count = 0;
+    for (const s of suggestions) {
+      if (q && !s.address.toLowerCase().includes(q) && !s.label.toLowerCase().includes(q)) continue;
+      const opt = document.createElement('div');
+      opt.className = 'custom-select-option';
+      opt.dataset.value = s.address;
+      opt.innerHTML = `<span class="custom-select-label">${s.label}</span><span class="custom-select-url">${truncAddr(s.address)}</span>`;
+      dd.appendChild(opt);
+      if (++count >= 8) break;
+    }
+    dd.classList.toggle('hidden', count === 0);
+  }
+
+  input.addEventListener('focus', () => rebuild(input.value));
+  input.addEventListener('input', () => rebuild(input.value));
+  input.addEventListener('blur', () => { setTimeout(() => dd.classList.add('hidden'), 150); });
+  dd.addEventListener('mousedown', (e) => {
+    const opt = e.target.closest('.custom-select-option');
+    if (!opt) return;
+    e.preventDefault();
+    input.value = opt.dataset.value;
+    input.dispatchEvent(new Event('input'));
+    dd.classList.add('hidden');
+  });
+
+  input.parentNode?.insertBefore(wrap, input);
+  wrap.appendChild(input);
+  wrap.appendChild(dd);
 }
 
 export function collectInputValues(container) {

@@ -52,6 +52,33 @@ describe('Gate 5 — Dead Code Elimination', () => {
     }
   });
 
+  it('no unused named imports in source modules', () => {
+    const srcFiles = readdirSync(SRC_DIR)
+      .filter(f => f.endsWith('.js'))
+      .map(f => ({ name: f, content: readFileSync(join(SRC_DIR, f), 'utf8') }));
+
+    const importRe = /import\s*\{([^}]+)\}\s*from/g;
+    const violations = [];
+
+    for (const file of srcFiles) {
+      let match;
+      while ((match = importRe.exec(file.content)) !== null) {
+        const names = match[1].split(',').map(s => s.trim()).filter(Boolean);
+        for (const name of names) {
+          const clean = name.includes(' as ') ? name.split(' as ')[1].trim() : name;
+          if (!clean) continue;
+          const bodyAfterImports = file.content.slice(file.content.lastIndexOf('\nfrom ') + 1);
+          const usageRe = new RegExp('\\b' + clean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b');
+          if (!usageRe.test(bodyAfterImports)) {
+            violations.push(`${file.name}: unused import "${clean}"`);
+          }
+        }
+      }
+    }
+
+    expect(violations, 'Unused imports found').toEqual([]);
+  });
+
   it('no TODO/FIXME/HACK markers left in source modules', () => {
     const srcFiles = readdirSync(SRC_DIR)
       .filter(f => f.endsWith('.js'))

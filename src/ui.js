@@ -1,5 +1,6 @@
-import { ACCOUNT_SOURCE, COPY_FEEDBACK_MS, ICON_COPY, ICON_CHECK, ROUTES, ROUTE_TO_DOM_ID } from './constants.js';
+import { ACCOUNT_SOURCE, COPY_FEEDBACK_MS, ICON_COPY, ICON_CHECK, LS_ACTIVE_ROUTE, LS_INSIGHT_WIDTH, LS_TIMELINE_HEIGHT, ROUTES, ROUTE_TO_DOM_ID } from './constants.js';
 import { copyToClipboard, truncAddr } from './chain-utils.js';
+import { pushTimelineEvent } from './timeline.js';
 import { state } from './state.js';
 
 const $ = (id) => document.getElementById(id);
@@ -26,6 +27,7 @@ export function initDomRefs() {
     explorerSearchInput: $('explorerSearchInput'),
     explorerSearchBtn: $('explorerSearchBtn'),
     explorerLiveBtn: $('explorerLiveBtn'),
+    explorerDocs: $('explorerDocs'),
     preflightChecklist: $('preflightChecklist'),
     diagnosticsCard: $('diagnosticsCard'),
     networkPresetTrigger: $('networkPresetTrigger'),
@@ -91,6 +93,33 @@ export function initDomRefs() {
     constantResult: $('constantResult'),
     constantResultWrap: $('constantResultWrap'),
     constantResultCopyBtn: $('constantResultCopyBtn'),
+    metadataPane: $('metadataPane'),
+    metadataDocs: $('metadataDocs'),
+    dryRunBtn: $('dryRunBtn'),
+    addToBatchBtn: $('addToBatchBtn'),
+    proxyExecWrap: $('proxyExecWrap'),
+    proxyExecCheck: $('proxyExecCheck'),
+    proxyExecReal: $('proxyExecReal'),
+    batchList: $('batchList'),
+    watchPanel: $('watchPanel'),
+    mapBrowserWrap: $('mapBrowserWrap'),
+    queryAtBlock: $('queryAtBlock'),
+    queryCompare: $('queryCompare'),
+    explorerViewToggle: $('explorerViewToggle'),
+    eventStreamPane: $('eventStreamPane'),
+    eventStreamFilter: $('eventStreamFilter'),
+    eventStreamList: $('eventStreamList'),
+    accountXRay: $('accountXRay'),
+    proxyManager: $('proxyManager'),
+    addressBookSection: $('addressBookSection'),
+    addressBookContent: $('addressBookContent'),
+    nonceInfo: $('nonceInfo'),
+    chainHealth: $('chainHealth'),
+    decodeInput: $('decodeInput'),
+    decodeTypeHintTrigger: $('decodeTypeHintTrigger'),
+    decodeTypeHintDropdown: $('decodeTypeHintDropdown'),
+    decodeBtn: $('decodeBtn'),
+    decodeResult: $('decodeResult'),
     logCopyBtn: $('logCopyBtn'),
     resultCopyBtn: $('resultCopyBtn'),
     explorerLink: $('explorerLink'),
@@ -127,6 +156,7 @@ export function syncPanelAvailability() {
  */
 export function setActiveRoute(route) {
   state.activeRoute = route;
+  try { localStorage.setItem(LS_ACTIVE_ROUTE, route); } catch {}
   const activeDomId = ROUTE_TO_DOM_ID[route];
   for (const [, domId] of Object.entries(ROUTE_TO_DOM_ID)) {
     const el = dom[domId];
@@ -142,17 +172,26 @@ export function setActiveRoute(route) {
   }
 }
 
+const DATA_HUB_PANES = [
+  { pane: 'queryPane', docs: 'queryDocs' },
+  { pane: 'constantsPane', docs: 'constantDocs' },
+  { pane: 'metadataPane', docs: 'metadataDocs' },
+];
+
 /**
- * Switches the active sub-tab within DataHub (Queries vs Constants).
- * Manages insightRail docs visibility for the active sub-tab.
+ * Switches the active sub-tab within DataHub.
+ * Data-driven: iterates DATA_HUB_PANES for pane/docs visibility.
  */
 export function setDataHubTab(pane) {
-  dom.queryPane.classList.toggle('hidden', pane !== 'queryPane');
-  dom.constantsPane.classList.toggle('hidden', pane !== 'constantsPane');
-  const showQuery = pane === 'queryPane' && dom.queryDocs.innerHTML.trim();
-  const showConst = pane === 'constantsPane' && dom.constantDocs.innerHTML.trim();
-  dom.queryDocs.classList.toggle('hidden', !showQuery);
-  dom.constantDocs.classList.toggle('hidden', !showConst);
+  for (const entry of DATA_HUB_PANES) {
+    const paneEl = dom[entry.pane];
+    const docsEl = dom[entry.docs];
+    if (paneEl) paneEl.classList.toggle('hidden', entry.pane !== pane);
+    if (docsEl) {
+      const show = entry.pane === pane && docsEl.innerHTML.trim();
+      docsEl.classList.toggle('hidden', !show);
+    }
+  }
   const activeBtn = dom.rightPanelToggle.querySelector(`[data-pane="${pane}"]`);
   dom.rightPanelTitle.textContent = activeBtn?.dataset.title ?? '';
   for (const b of dom.rightPanelToggle.querySelectorAll('button')) {
@@ -437,6 +476,30 @@ export function initAccountSourceToggle(onSelectMode) {
   });
 }
 
+export function addResultAction(container, label, className, onClick) {
+  const btn = document.createElement('button');
+  btn.className = `btn-secondary btn-sm mt-8 ${className}`;
+  btn.textContent = label;
+  btn.addEventListener('click', onClick);
+  container.appendChild(btn);
+  return btn;
+}
+
+export function addPinButton(container, title, detail) {
+  const existing = container.querySelector('.btn-pin-timeline');
+  if (existing) existing.remove();
+  const btn = document.createElement('button');
+  btn.className = 'btn-secondary btn-sm btn-pin-timeline mt-8';
+  btn.textContent = '📌 Pin to Timeline';
+  btn.addEventListener('click', () => {
+    pushTimelineEvent('pin', title, detail);
+    renderTimeline();
+    btn.textContent = '✓ Pinned';
+    btn.disabled = true;
+  });
+  container.appendChild(btn);
+}
+
 export function initUI() {
   initDomRefs();
   initCopyButton(dom.logCopyBtn, dom.logPanel);
@@ -479,8 +542,8 @@ export function initUI() {
   setActiveRoute(state.activeRoute);
 }
 
-const TIMELINE_HEIGHT_KEY = 'tao-forge-timeline-height';
-const INSIGHT_WIDTH_KEY = 'tao-forge-insight-width';
+const TIMELINE_HEIGHT_KEY = LS_TIMELINE_HEIGHT;
+const INSIGHT_WIDTH_KEY = LS_INSIGHT_WIDTH;
 
 function initInsightResize() {
   const saved = localStorage.getItem(INSIGHT_WIDTH_KEY);

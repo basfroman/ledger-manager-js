@@ -35,8 +35,8 @@
 
   <div class="top-bar-section">
     <div class="seg-control seg-control-sm" id="accountSourceToggle">
-      <button type="button" class="active" data-mode="ledger">Ledger</button>
-      <button type="button" data-mode="wallet">Wallet</button>
+      <button type="button" class="active" data-mode="wallet">Wallet</button>
+      <button type="button" data-mode="ledger">Ledger</button>
     </div>
   </div>
 
@@ -51,9 +51,9 @@
 
 <div id="appBody" class="app-body">
   <nav id="navRail" class="nav-rail" role="tablist" aria-label="Main navigation">
-    <button type="button" class="nav-rail-btn active" role="tab" data-route="explorer" aria-selected="true" title="Blocks">
+    <button type="button" class="nav-rail-btn active" role="tab" data-route="explorer" aria-selected="true" title="Explorer">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-      <span>Blocks</span>
+      <span>Explorer</span>
     </button>
     <button type="button" class="nav-rail-btn" role="tab" data-route="compose" aria-selected="false" title="Execute Extrinsic">
       <svg width="20" height="20" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M24 16 L10 32 L24 48"/><path d="M40 16 L54 32 L40 48"/><circle cx="32" cy="32" r="3.5" fill="currentColor" stroke="none"/></svg>
@@ -100,7 +100,13 @@
         <div class="mt-8" id="extrinsicArgs"></div>
         <div class="row mt-8 sticky-action">
           <button class="btn-secondary" id="feeEstimateBtn" disabled>Estimate Fee</button>
+          <button class="btn-secondary" id="dryRunBtn" disabled>Dry Run</button>
+          <button class="btn-secondary" id="addToBatchBtn" disabled>+ Batch</button>
           <button class="btn-primary" id="extrinsicSendBtn" disabled>Sign &amp; Send</button>
+        </div>
+        <div class="proxy-exec-row mt-8 hidden" id="proxyExecWrap">
+          <label class="proxy-exec-label"><input type="checkbox" id="proxyExecCheck" /> Execute as proxy for:</label>
+          <input id="proxyExecReal" class="explorer-search-input" placeholder="Real account (ss58)" />
         </div>
         <div class="text-sm text-muted mt-8 hidden" id="feeEstimate"></div>
         <div id="preflightChecklist" class="mt-8"></div>
@@ -126,6 +132,7 @@
         <div class="seg-control" id="rightPanelToggle">
           <button type="button" class="active" data-pane="queryPane" data-title="Queries">Queries</button>
           <button type="button" data-pane="constantsPane" data-title="Constants">Constants</button>
+          <button type="button" data-pane="metadataPane" data-title="Metadata">Metadata</button>
         </div>
       </div>
 
@@ -152,7 +159,11 @@
         </div>
         <div class="mt-8" id="queryKeys"></div>
         <div class="row mt-8">
+          <input id="queryAtBlock" class="explorer-search-input query-at-block" placeholder="At block # (optional)" />
           <button class="btn-primary" id="queryExecuteBtn" disabled>Execute Query</button>
+        </div>
+        <div class="mt-8 query-compare-row">
+          <label class="query-compare-label"><input type="checkbox" id="queryCompare" /> Compare with current</label>
         </div>
         <div class="mt-8 hidden" id="queryResultWrap">
           <label>Result</label>
@@ -161,6 +172,8 @@
             <pre class="result-block query-result-block" id="queryResult"></pre>
           </div>
         </div>
+        <div id="watchPanel" class="watch-panel"></div>
+        <div id="mapBrowserWrap" class="hidden"></div>
       </div>
 
       <div id="constantsPane" class="hidden">
@@ -192,6 +205,8 @@
           </div>
         </div>
       </div>
+
+      <div id="metadataPane" class="hidden"></div>
     </div>
 
     <!-- Route: Accounts -->
@@ -200,23 +215,7 @@
         <div class="section-header">
           <h2>Source</h2>
         </div>
-        <div id="ledgerOnlyWrap">
-          <div class="ledger-actions">
-            <button class="btn-primary" id="addDeviceBtn">+ Add Device</button>
-            <button class="btn-primary" id="loadAccountsBtn" disabled>Load 5 Accounts</button>
-            <div class="index-input-wrap">
-              <input id="singleAccountIndex" class="index-input" type="number" min="0" step="1" value="0" placeholder="#" />
-            </div>
-            <button class="btn-secondary" id="loadSingleAccountBtn" disabled>Load by Index</button>
-          </div>
-          <table class="mt-12">
-            <thead><tr><th>Device</th><th></th></tr></thead>
-            <tbody id="deviceListBody">
-              <tr><td colspan="2" class="text-muted">No authorized devices</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div id="walletOnlyWrap" class="hidden">
+        <div id="walletOnlyWrap">
           <label for="walletExtensionTrigger">Browser extension</label>
           <div class="wallet-extension-row mt-8">
             <div class="custom-select wallet-extension-select-wrap" id="walletExtensionWrap">
@@ -233,7 +232,23 @@
             The page may prompt every installed Polkadot-compatible extension once; only accounts from the extension you chose are loaded.
           </p>
         </div>
-        <div class="status-box status-neutral mt-12" id="ledgerStatus">No device selected</div>
+        <div id="ledgerOnlyWrap" class="hidden">
+          <div class="ledger-actions">
+            <button class="btn-primary" id="addDeviceBtn">+ Add Device</button>
+            <button class="btn-primary" id="loadAccountsBtn" disabled>Load 5 Accounts</button>
+            <div class="index-input-wrap">
+              <input id="singleAccountIndex" class="index-input" type="number" min="0" step="1" value="0" placeholder="#" />
+            </div>
+            <button class="btn-secondary" id="loadSingleAccountBtn" disabled>Load by Index</button>
+          </div>
+          <table class="mt-12">
+            <thead><tr><th>Device</th><th></th></tr></thead>
+            <tbody id="deviceListBody">
+              <tr><td colspan="2" class="text-muted">No authorized devices</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="status-box status-neutral mt-12" id="ledgerStatus">Click Refresh to detect browser extensions</div>
       </section>
 
       <section id="accountsSection" class="panel-locked mt-8" aria-disabled="true">
@@ -244,7 +259,7 @@
         <div class="accounts-scroll">
           <table>
             <thead>
-              <tr><th>#</th><th>Address</th><th id="pathColHeader">Derivation Path</th><th>Balance (TAO)</th><th></th></tr>
+              <tr><th>#</th><th>Address</th><th id="pathColHeader">Wallet / Key name</th><th>Balance (TAO)</th><th></th></tr>
             </thead>
             <tbody id="accountsBody">
               <tr><td colspan="5" class="text-muted">No accounts loaded</td></tr>
@@ -252,19 +267,36 @@
           </table>
         </div>
       </section>
+
+      <div id="accountXRay" class="hidden mt-8"></div>
+      <div id="proxyManager" class="hidden mt-8"></div>
+      <details id="addressBookSection" class="mt-8">
+        <summary>Address Book</summary>
+        <div id="addressBookContent"></div>
+      </details>
     </div>
 
     <!-- Route: Explorer -->
     <div id="routeExplorer" role="tabpanel">
+      <div class="explorer-toolbar">
+        <input id="explorerSearchInput" class="explorer-search-input" placeholder="Block # or hash..." />
+        <button id="explorerSearchBtn" class="btn-primary btn-sm" disabled>Go</button>
+        <button id="explorerLiveBtn" class="btn-secondary btn-sm" disabled>Live</button>
+        <div class="seg-control seg-control-sm" id="explorerViewToggle">
+          <button type="button" class="active" data-view="blocks">Blocks</button>
+          <button type="button" data-view="events">Events</button>
+        </div>
+      </div>
       <div class="explorer-split">
         <div class="explorer-list-pane">
-          <div class="explorer-toolbar">
-            <input id="explorerSearchInput" class="explorer-search-input" placeholder="Block # or hash..." />
-            <button id="explorerSearchBtn" class="btn-primary btn-sm" disabled>Go</button>
-            <button id="explorerLiveBtn" class="btn-secondary btn-sm" disabled>Live</button>
-          </div>
           <div class="explorer-block-list" id="explorerBlockList">
             <div class="explorer-placeholder">Connect to a node to explore blocks</div>
+          </div>
+          <div id="eventStreamPane" class="hidden">
+            <div class="event-stream-toolbar">
+              <input id="eventStreamFilter" class="explorer-search-input" placeholder="Filter events..." />
+            </div>
+            <div id="eventStreamList" class="event-stream-list"></div>
           </div>
         </div>
         <div class="explorer-detail-pane" id="explorerDetailPane">
@@ -276,7 +308,9 @@
     <!-- Route: Diagnostics -->
     <div id="routeDiagnostics" class="hidden diag-layout" role="tabpanel">
       <h2>Diagnostics</h2>
+      <div id="chainHealth" class="mt-8"></div>
       <div id="diagnosticsCard"></div>
+      <div id="nonceInfo" class="mt-8"></div>
       <details class="diag-notes mt-8">
         <summary>Signing &amp; Ledger Notes</summary>
         <p class="hint mt-8">
@@ -286,6 +320,24 @@
           (mainnet/testnet have it). For custom/local nodes, rebuild with
           <code>--features metadata-hash</code>, or signing may fail with <code>CannotLookup</code>.
         </p>
+      </details>
+      <details class="decode-section mt-8">
+        <summary>Hex Decoder</summary>
+        <textarea id="decodeInput" class="mt-8" placeholder="0x..." rows="3"></textarea>
+        <div class="row mt-8">
+          <div class="custom-select" id="decodeTypeHintWrap">
+            <button class="custom-select-trigger" id="decodeTypeHintTrigger" type="button">
+              <span class="custom-select-label">Auto-detect</span>
+            </button>
+            <div class="custom-select-dropdown hidden" id="decodeTypeHintDropdown">
+              <div class="custom-select-option selected" data-value="auto"><span class="custom-select-label">Auto-detect</span></div>
+              <div class="custom-select-option" data-value="extrinsic"><span class="custom-select-label">Extrinsic</span></div>
+              <div class="custom-select-option" data-value="call"><span class="custom-select-label">Call</span></div>
+            </div>
+          </div>
+          <button id="decodeBtn" class="btn-primary btn-sm" disabled>Decode</button>
+        </div>
+        <div id="decodeResult" class="mt-8"></div>
       </details>
       <section id="logSection" class="mt-8 diag-log-section">
         <div class="section-header">
@@ -303,9 +355,11 @@
     <div class="insight-resize-handle" id="insightResizeHandle"></div>
     <h2>Insight</h2>
     <div id="insightContent"></div>
+    <div class="doc-block mt-8 hidden" id="explorerDocs" data-insight-route="explorer"></div>
     <div class="doc-block mt-8 hidden" id="extrinsicDocs" data-insight-route="compose"></div>
     <div class="doc-block mt-8 hidden" id="queryDocs" data-insight-route="dataHub"></div>
     <div class="doc-block mt-8 hidden" id="constantDocs" data-insight-route="dataHub"></div>
+    <div class="doc-block mt-8 hidden" id="metadataDocs" data-insight-route="dataHub"></div>
   </aside>
 </div>
 
@@ -315,6 +369,7 @@
     <h2>Timeline</h2>
     <button type="button" class="btn-secondary btn-sm" id="footerCollapseBtn">Collapse</button>
   </div>
+  <div id="batchList" class="batch-list hidden"></div>
   <div id="timelineList" class="timeline-list" role="log" aria-live="polite"></div>
 </div>
 

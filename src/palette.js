@@ -9,6 +9,7 @@ let paletteIndex = [];
 let activeResultIndex = -1;
 
 const STATIC_ROUTE_ENTRIES = [
+  { type: 'route', kind: 'nav', label: 'Explorer', route: ROUTES.EXPLORER },
   { type: 'route', kind: 'nav', label: 'Compose', route: ROUTES.COMPOSE },
   { type: 'route', kind: 'nav', label: 'Data Hub', route: ROUTES.DATA_HUB },
   { type: 'route', kind: 'nav', label: 'Accounts', route: ROUTES.ACCOUNTS },

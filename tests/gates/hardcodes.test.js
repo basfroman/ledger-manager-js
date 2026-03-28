@@ -59,12 +59,43 @@ describe('Gate 8 — Hardcode Control', () => {
     }
   });
 
+  it('new feature constants are defined only in constants.js', () => {
+    const files = getSrcFiles(['constants.js']);
+    const names = ['MORTAL_ERA_PERIOD', 'MAX_WATCHES', 'MAX_BATCH_CALLS', 'MAX_ADDRESS_BOOK', 'HEALTH_POLL_MS', 'MAX_EVENT_STREAM'];
+    for (const file of files) {
+      for (const name of names) {
+        expect(file.content, `${file.name} should not redefine ${name}`).not.toMatch(new RegExp(`${name}\\s*=\\s*\\d`));
+      }
+    }
+  });
+
+  it('era value uses MORTAL_ERA_PERIOD constant, not inline number', () => {
+    const txSrc = readFileSync(join(SRC_DIR, 'tx.js'), 'utf8');
+    expect(txSrc, 'tx.js should use MORTAL_ERA_PERIOD, not era: 64').not.toMatch(/era:\s*\d+/);
+  });
+
   it('ROUTES and ROUTE_TO_DOM_ID are defined only in constants.js', () => {
     const files = getSrcFiles(['constants.js']);
     for (const file of files) {
       expect(file.content, `${file.name} should not redefine ROUTES`).not.toMatch(/\bROUTES\s*=\s*Object\.freeze/);
       expect(file.content, `${file.name} should not redefine ROUTE_TO_DOM_ID`).not.toMatch(/ROUTE_TO_DOM_ID\s*=\s*Object\.freeze/);
     }
+  });
+
+  it('localStorage keys are defined only in constants.js', () => {
+    const files = getSrcFiles(['constants.js']);
+    const lsKeys = ['LS_LAST_ENDPOINT', 'LS_ACCOUNT_SOURCE', 'LS_ACTIVE_ROUTE', 'LS_ADDRESS_BOOK', 'LS_DRAFTS', 'LS_INSIGHT_WIDTH', 'LS_TIMELINE_HEIGHT'];
+    for (const file of files) {
+      for (const key of lsKeys) {
+        expect(file.content, `${file.name} should not redefine ${key}`).not.toMatch(new RegExp(`${key}\\s*=\\s*['"]`));
+      }
+    }
+  });
+
+  it('SIGNING_MODE_METADATA_HASH is used instead of inline mode:1', () => {
+    const txSrc = readFileSync(join(SRC_DIR, 'tx.js'), 'utf8');
+    expect(txSrc).toContain('SIGNING_MODE_METADATA_HASH');
+    expect(txSrc, 'tx.js should not hardcode mode: 1').not.toMatch(/mode:\s+\d+[,\s]/);
   });
 
   it('no route string literals in feature modules (must import from constants)', () => {

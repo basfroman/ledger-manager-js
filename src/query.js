@@ -1,7 +1,8 @@
 import { createArgInput, collectInputValues } from './arg-input.js';
 import { escapeHtml, formatDocs, highlightJson } from './chain-utils.js';
+import { MAX_WATCHES } from './constants.js';
 import { state } from './state.js';
-import { dom, setupCustomDropdown, populateCustomDropdown, log, renderTimeline } from './ui.js';
+import { dom, setupCustomDropdown, populateCustomDropdown, log, renderTimeline, addPinButton, addResultAction } from './ui.js';
 import { pushTimelineEvent } from './timeline.js';
 
 function buildStorageDocHtml(meta, registry) {
@@ -162,17 +163,227 @@ async function executeQuery() {
 
   try {
     const keys = collectInputValues(dom.queryKeys);
-    const result = await state.api.query[pallet][item](...keys);
+    const atBlock = dom.queryAtBlock?.value?.trim();
+    const compare = dom.queryCompare?.checked && atBlock;
+
+    let result;
+    if (atBlock) {
+      let blockHash;
+      if (atBlock.startsWith('0x')) {
+        blockHash = atBlock;
+      } else {
+        blockHash = await state.api.rpc.chain.getBlockHash(Number(atBlock));
+        blockHash = blockHash.toHex();
+      }
+      result = await state.api.query[pallet][item].at(blockHash, ...keys);
+    } else {
+      result = await state.api.query[pallet][item](...keys);
+    }
+
     const json = JSON.stringify(result.toHuman(), null, 2);
-    dom.queryResult.innerHTML = highlightJson(json);
-    log(`Query ${pallet}.${item} OK`);
+
+    if (compare) {
+      const current = await state.api.query[pallet][item](...keys);
+      const currentJson = JSON.stringify(current.toHuman(), null, 2);
+      dom.queryResult.innerHTML = '';
+      dom.queryResult.className = 'query-compare-result';
+
+      const histBlock = document.createElement('div');
+      histBlock.innerHTML = `<label>At block ${escapeHtml(atBlock)}</label><pre class="result-block query-result-block">${highlightJson(json)}</pre>`;
+      const curBlock = document.createElement('div');
+      curBlock.innerHTML = `<label>Current</label><pre class="result-block query-result-block">${highlightJson(currentJson)}</pre>`;
+      dom.queryResult.append(histBlock, curBlock);
+      dom.queryResultWrap.classList.remove('hidden');
+    } else {
+      dom.queryResult.innerHTML = highlightJson(json);
+    }
+
+    log(`Query ${pallet}.${item} OK${atBlock ? ` @${atBlock}` : ''}`);
     addPinButton(dom.queryResultWrap, `Query: ${pallet}.${item}`, json);
+
+    addWatchButton(dom.queryResultWrap, pallet, item, keys);
+    addMapBrowseButton(pallet, item);
   } catch (err) {
     dom.queryResult.textContent = `Error: ${err.message}`;
     dom.queryResult.classList.add('status-err');
     log(`Query ${pallet}.${item} FAILED: ${err.message}`);
   } finally {
     dom.queryExecuteBtn.disabled = false;
+  }
+}
+
+function addWatchButton(container, pallet, item, keys) {
+  const existing = container.querySelector('.btn-watch');
+  if (existing) existing.remove();
+
+  if (state.watches.length >= MAX_WATCHES) return;
+  if (state.watches.some(w => w.pallet === pallet && w.item === item)) return;
+
+  addResultAction(container, '👁 Watch', 'btn-watch', () => {
+    startWatch(pallet, item, keys);
+  });
+}
+
+let nextWatchId = 1;
+
+export function startWatch(pallet, item, keys) {
+  if (!state.api || state.watches.length >= MAX_WATCHES) return;
+  if (state.watches.some(w => w.pallet === pallet && w.item === item)) return;
+
+  const id = nextWatchId++;
+  const watchEntry = { id, pallet, item, keys, unsub: null, lastValue: null, el: null };
+
+  state.api.query[pallet][item](...keys, (newValue) => {
+    const json = JSON.stringify(newValue.toHuman(), null, 2);
+    const changed = watchEntry.lastValue !== null && watchEntry.lastValue !== json;
+    watchEntry.lastValue = json;
+
+    if (watchEntry.el) {
+      const valueEl = watchEntry.el.querySelector('.watch-card-value');
+      if (valueEl) {
+        valueEl.textContent = json;
+        if (changed) {
+          valueEl.classList.remove('watch-flash-green', 'watch-flash-red');
+          void valueEl.offsetWidth;
+          valueEl.classList.add('watch-flash-green');
+        }
+      }
+    }
+
+    if (changed) {
+      pushTimelineEvent('info', `Watch: ${pallet}.${item} updated`);
+      renderTimeline();
+    }
+  }).then(unsub => {
+    watchEntry.unsub = unsub;
+  }).catch(err => {
+    log(`Watch error: ${err.message}`);
+  });
+
+  state.watches.push(watchEntry);
+  renderWatchPanel();
+}
+
+export function stopWatch(id) {
+  const idx = state.watches.findIndex(w => w.id === id);
+  if (idx !== -1) {
+    const w = state.watches[idx];
+    if (w.unsub) w.unsub();
+    state.watches.splice(idx, 1);
+    renderWatchPanel();
+  }
+}
+
+export function stopAllWatches() {
+  for (const w of state.watches) {
+    if (w.unsub) w.unsub();
+  }
+  state.watches = [];
+  renderWatchPanel();
+}
+
+function renderWatchPanel() {
+  if (!dom.watchPanel) return;
+  dom.watchPanel.innerHTML = '';
+
+  for (const w of state.watches) {
+    const card = document.createElement('div');
+    card.className = 'watch-card';
+    w.el = card;
+
+    const header = document.createElement('div');
+    header.className = 'watch-card-header';
+    const title = document.createElement('span');
+    title.className = 'watch-card-title';
+    title.textContent = `${w.pallet}.${w.item}`;
+    const stopBtn = document.createElement('button');
+    stopBtn.className = 'btn-danger btn-sm';
+    stopBtn.textContent = '✕';
+    stopBtn.addEventListener('click', () => stopWatch(w.id));
+    header.append(title, stopBtn);
+
+    const value = document.createElement('div');
+    value.className = 'watch-card-value';
+    value.textContent = w.lastValue ?? 'Waiting...';
+
+    card.append(header, value);
+    dom.watchPanel.appendChild(card);
+  }
+}
+
+function addMapBrowseButton(pallet, item) {
+  if (!dom.mapBrowserWrap) return;
+  dom.mapBrowserWrap.innerHTML = '';
+  dom.mapBrowserWrap.classList.add('hidden');
+
+  if (!state.api?.query[pallet]?.[item]) return;
+  const meta = state.api.query[pallet][item].meta;
+  if (!meta.type.isMap) return;
+
+  dom.mapBrowserWrap.classList.remove('hidden');
+  const browseBtn = document.createElement('button');
+  browseBtn.className = 'btn-secondary btn-sm mt-8';
+  browseBtn.textContent = '📋 Browse All Keys';
+  browseBtn.addEventListener('click', () => browseStorageMap(pallet, item));
+  dom.mapBrowserWrap.appendChild(browseBtn);
+}
+
+async function browseStorageMap(pallet, item, startKey = null) {
+  if (!state.api) return;
+  dom.mapBrowserWrap.innerHTML = '<div class="text-muted">Loading keys...</div>';
+
+  try {
+    const prefix = state.api.query[pallet][item].keyPrefix();
+    const pageSize = 100;
+    const keys = await state.api.rpc.state.getKeysPaged(prefix, pageSize, startKey || prefix);
+
+    if (keys.length === 0) {
+      dom.mapBrowserWrap.innerHTML = '<div class="text-muted text-sm">No keys found</div>';
+      return;
+    }
+
+    const values = await state.api.rpc.state.queryStorageAt(keys);
+
+    dom.mapBrowserWrap.innerHTML = '';
+    const table = document.createElement('table');
+    table.className = 'map-browser-table';
+    table.innerHTML = '<thead><tr><th>#</th><th>Key (truncated)</th><th>Value</th></tr></thead>';
+    const tbody = document.createElement('tbody');
+
+    const changes = values[0]?.changes ?? [];
+    for (let i = 0; i < changes.length; i++) {
+      const [k, v] = changes[i];
+      const tr = document.createElement('tr');
+      const keyStr = k.toHex();
+      let valStr = '(null)';
+      if (v && v.isSome !== undefined) {
+        valStr = v.isSome ? v.unwrap().toHuman?.() ?? v.unwrap().toString() : '(none)';
+      } else if (v) {
+        valStr = v.toHuman?.() ?? v.toString();
+      }
+      if (typeof valStr === 'object') valStr = JSON.stringify(valStr);
+      tr.innerHTML = `<td>${i + 1}</td><td title="${escapeHtml(keyStr)}">${keyStr.slice(0, 24)}…</td><td>${escapeHtml(String(valStr).slice(0, 60))}</td>`;
+      tbody.appendChild(tr);
+    }
+
+    table.appendChild(tbody);
+    dom.mapBrowserWrap.appendChild(table);
+
+    if (keys.length === pageSize) {
+      const nav = document.createElement('div');
+      nav.className = 'map-browser-nav';
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'btn-secondary btn-sm';
+      nextBtn.textContent = 'Next Page →';
+      nextBtn.addEventListener('click', () => browseStorageMap(pallet, item, keys[keys.length - 1].toHex()));
+      nav.appendChild(nextBtn);
+      dom.mapBrowserWrap.appendChild(nav);
+    }
+
+    log(`Map browser: ${pallet}.${item} — ${changes.length} entries`);
+  } catch (err) {
+    dom.mapBrowserWrap.innerHTML = `<div class="status-box status-err">${escapeHtml(err.message)}</div>`;
+    log(`Map browser error: ${err.message}`);
   }
 }
 
@@ -212,21 +423,6 @@ export function selectQuery(pallet, item) {
   dom.qStorageSelectDropdown.querySelectorAll('.custom-select-option').forEach(o => {
     o.classList.toggle('selected', o.dataset.value === item);
   });
-}
-
-function addPinButton(container, title, detail) {
-  const existing = container.querySelector('.btn-pin-timeline');
-  if (existing) existing.remove();
-  const btn = document.createElement('button');
-  btn.className = 'btn-secondary btn-sm btn-pin-timeline mt-8';
-  btn.textContent = '📌 Pin to Timeline';
-  btn.addEventListener('click', () => {
-    pushTimelineEvent('pin', title, detail);
-    renderTimeline();
-    btn.textContent = '✓ Pinned';
-    btn.disabled = true;
-  });
-  container.appendChild(btn);
 }
 
 export function initQuery() {
