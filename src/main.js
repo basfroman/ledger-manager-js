@@ -58,6 +58,11 @@ initAccounts({
         .catch(() => { dom.nonceInfo.innerHTML = ''; });
       showProxiesForAccount(state.selectedAccount.address)
         .catch(() => {});
+    } else {
+      dom.accountXRay.innerHTML = '';
+      dom.accountXRay.classList.add('hidden');
+      dom.proxyManager.innerHTML = '';
+      dom.proxyManager.classList.add('hidden');
     }
   },
 });

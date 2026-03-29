@@ -51,7 +51,6 @@ export function mountAppShell() {
         <button id="feeEstimateBtn"></button><button id="dryRunBtn"></button><button id="addToBatchBtn"></button><button id="extrinsicSendBtn"></button>
         <div id="feeEstimate"></div>
         <div id="proxyExecWrap" class="hidden"><input type="checkbox" id="proxyExecCheck" /><input id="proxyExecReal" /></div>
-        <div id="preflightChecklist"></div>
       </div>
       <div id="txStatus"></div>
       <div id="txResultWrap"><div class="log-wrap"><button class="log-copy-btn" id="resultCopyBtn"></button><div id="txResult"></div></div></div>
@@ -120,9 +119,6 @@ export function mountAppShell() {
         <button id="refreshBalancesBtn"></button>
         <div class="accounts-scroll"><table><thead><tr><th>#</th><th>Address</th><th id="pathColHeader">Wallet / Key name</th><th>Balance (TAO)</th><th></th></tr></thead><tbody id="accountsBody"></tbody></table></div>
       </section>
-      <div id="accountXRay" class="hidden"></div>
-      <div id="proxyManager" class="hidden"></div>
-      <details id="addressBookSection"><summary>Address Book</summary><div id="addressBookContent"></div></details>
     </div>
     <div id="routeExplorer" role="tabpanel">
       <div class="explorer-toolbar">
@@ -174,6 +170,10 @@ export function mountAppShell() {
     <div class="doc-block hidden" id="queryDocs" data-insight-route="dataHub"></div>
     <div class="doc-block hidden" id="constantDocs" data-insight-route="dataHub"></div>
     <div class="doc-block hidden" id="metadataDocs" data-insight-route="dataHub"></div>
+    <div id="accountXRay" class="hidden" data-insight-route="accounts"></div>
+    <div id="proxyManager" class="hidden" data-insight-route="accounts"></div>
+    <details id="addressBookSection" data-insight-route="accounts" style="display:none"><summary>Address Book</summary><div id="addressBookContent"></div></details>
+    <div class="insight-preflight" data-insight-route="compose" style="display:none"><div id="preflightChecklist"></div></div>
   </aside>
 </div>
 <div id="timelineDock" class="timeline-dock">

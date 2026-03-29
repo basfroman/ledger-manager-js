@@ -734,6 +734,12 @@ body {
 
 /* ── Preflight checklist ── */
 
+.insight-preflight {
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
 .preflight-check {
   display: flex;
   align-items: center;
@@ -1611,11 +1617,11 @@ tr[data-selectable]:hover { background: var(--surface2); cursor: pointer; }
 #addressBookSection summary:hover { color: var(--accent); }
 .address-book-add-row {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
   margin-top: 8px;
-  align-items: flex-end;
 }
-.address-book-add-row input { flex: 1; min-width: 0; }
+.address-book-add-row input { width: 100%; }
 
 /* ── Finality badges ── */
 

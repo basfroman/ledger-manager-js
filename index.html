@@ -109,7 +109,6 @@
           <input id="proxyExecReal" class="explorer-search-input" placeholder="Real account (ss58)" />
         </div>
         <div class="text-sm text-muted mt-8 hidden" id="feeEstimate"></div>
-        <div id="preflightChecklist" class="mt-8"></div>
       </div>
       <div class="status-box status-neutral mt-12" id="txStatus">Idle</div>
       <div class="mt-12 hidden" id="txResultWrap">
@@ -268,12 +267,6 @@
         </div>
       </section>
 
-      <div id="accountXRay" class="hidden mt-8"></div>
-      <div id="proxyManager" class="hidden mt-8"></div>
-      <details id="addressBookSection" class="mt-8">
-        <summary>Address Book</summary>
-        <div id="addressBookContent"></div>
-      </details>
     </div>
 
     <!-- Route: Explorer -->
@@ -360,6 +353,16 @@
     <div class="doc-block mt-8 hidden" id="queryDocs" data-insight-route="dataHub"></div>
     <div class="doc-block mt-8 hidden" id="constantDocs" data-insight-route="dataHub"></div>
     <div class="doc-block mt-8 hidden" id="metadataDocs" data-insight-route="dataHub"></div>
+    <div id="accountXRay" class="hidden" data-insight-route="accounts"></div>
+    <div id="proxyManager" class="hidden" data-insight-route="accounts"></div>
+    <details id="addressBookSection" data-insight-route="accounts" style="display:none">
+      <summary>Address Book</summary>
+      <div id="addressBookContent"></div>
+    </details>
+    <div class="insight-preflight" data-insight-route="compose" style="display:none">
+      <h3 class="xray-section-title">Readiness</h3>
+      <div id="preflightChecklist"></div>
+    </div>
   </aside>
 </div>
 
