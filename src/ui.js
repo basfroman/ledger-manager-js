@@ -97,9 +97,7 @@ export function initDomRefs() {
     metadataDocs: $('metadataDocs'),
     dryRunBtn: $('dryRunBtn'),
     addToBatchBtn: $('addToBatchBtn'),
-    proxyExecWrap: $('proxyExecWrap'),
-    proxyExecCheck: $('proxyExecCheck'),
-    proxyExecReal: $('proxyExecReal'),
+
     batchList: $('batchList'),
     watchPanel: $('watchPanel'),
     mapBrowserWrap: $('mapBrowserWrap'),
@@ -144,7 +142,7 @@ export function syncPanelAvailability() {
   const accountsReady = connected && state.lastLoadedAccounts.length > 0;
 
   dom.accountsSection.classList.toggle('panel-locked', !connected);
-  dom.builderPane.classList.toggle('panel-locked', connected && !accountsReady);
+  dom.builderPane.classList.toggle('panel-locked', !accountsReady);
   dom.routeDataHub.classList.toggle('panel-locked', !connected);
 
   dom.accountsSection.setAttribute('aria-disabled', String(!connected));

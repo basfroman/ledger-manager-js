@@ -120,14 +120,14 @@ describe('parseAccentRgbTuple', () => {
 });
 
 describe('syncPanelAvailability', () => {
-  it('disconnected: locks accounts, dataHub; sourceSection always unlocked; builderPane NOT locked (no compounding)', () => {
+  it('disconnected: locks accounts, dataHub, builderPane; sourceSection always unlocked', () => {
     state.api = null;
     state.lastLoadedAccounts = [];
     syncPanelAvailability();
     expect(dom.sourceSection.classList.contains('panel-locked')).toBe(false);
     expect(dom.accountsSection.classList.contains('panel-locked')).toBe(true);
     expect(dom.routeDataHub.classList.contains('panel-locked')).toBe(true);
-    expect(dom.builderPane.classList.contains('panel-locked')).toBe(false);
+    expect(dom.builderPane.classList.contains('panel-locked')).toBe(true);
   });
 
   it('connected, no accounts: unlocks dataHub; locks builderPane', () => {

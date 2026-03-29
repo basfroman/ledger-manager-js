@@ -3,13 +3,19 @@
 // Blocker: duplicate pane-toggle logic, duplicate event handling.
 
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 
 const SRC_DIR = join(import.meta.dirname, '../../src');
 
 function readSrc(name) {
   return readFileSync(join(SRC_DIR, name), 'utf8');
+}
+
+function getSrcFiles(exclude = []) {
+  return readdirSync(SRC_DIR)
+    .filter(f => f.endsWith('.js') && !exclude.includes(f))
+    .map(f => ({ name: f, content: readFileSync(join(SRC_DIR, f), 'utf8') }));
 }
 
 describe('Gate 4 — DRY', () => {
@@ -78,6 +84,14 @@ describe('Gate 4 — DRY', () => {
       const src = readSrc(file);
       expect(src, `${file} should not toggle route visibility directly`).not.toMatch(/routeCompose.*classList\.toggle/);
       expect(src, `${file} should not toggle route visibility directly`).not.toMatch(/routeDataHub.*classList\.toggle/);
+    }
+  });
+
+  it('appendKvRow is defined only in event-card.js — no local addRow duplicates', () => {
+    const files = getSrcFiles(['event-card.js']);
+    for (const file of files) {
+      expect(file.content, `${file.name} should not have a local addRow function`).not.toMatch(/function\s+addRow\s*\(/);
+      expect(file.content, `${file.name} should not redefine appendKvRow`).not.toMatch(/function\s+appendKvRow\s*\(/);
     }
   });
 });

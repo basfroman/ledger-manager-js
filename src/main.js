@@ -103,7 +103,6 @@ initNetwork({
     dom.chainHealth.innerHTML = '';
     dom.nonceInfo.innerHTML = '';
     dom.accountXRay.classList.add('hidden');
-    setActiveRoute(ROUTES.EXPLORER);
   },
 });
 

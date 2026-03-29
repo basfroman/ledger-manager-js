@@ -84,7 +84,7 @@ describe('Gate 8 — Hardcode Control', () => {
 
   it('localStorage keys are defined only in constants.js', () => {
     const files = getSrcFiles(['constants.js']);
-    const lsKeys = ['LS_LAST_ENDPOINT', 'LS_ACCOUNT_SOURCE', 'LS_ACTIVE_ROUTE', 'LS_ADDRESS_BOOK', 'LS_DRAFTS', 'LS_INSIGHT_WIDTH', 'LS_TIMELINE_HEIGHT'];
+    const lsKeys = ['LS_LAST_ENDPOINT', 'LS_ACCOUNT_SOURCE', 'LS_ACTIVE_ROUTE', 'LS_ADDRESS_BOOK', 'LS_SELECTED_ACCOUNT', 'LS_DRAFTS', 'LS_INSIGHT_WIDTH', 'LS_TIMELINE_HEIGHT'];
     for (const file of files) {
       for (const key of lsKeys) {
         expect(file.content, `${file.name} should not redefine ${key}`).not.toMatch(new RegExp(`${key}\\s*=\\s*['"]`));

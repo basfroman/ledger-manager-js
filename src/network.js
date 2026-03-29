@@ -68,10 +68,6 @@ export function initNetwork({ onConnected, onDisconnected }) {
 
     dom.customUrlWrap.classList.toggle('hidden', value !== 'custom');
     dom.networkPresetDropdown.classList.add('hidden');
-
-    if (state.api && value !== 'custom') {
-      dom.connectBtn.click();
-    }
   });
 
   dom.connectBtn.addEventListener('click', async () => {
@@ -85,6 +81,21 @@ export function initNetwork({ onConnected, onDisconnected }) {
       if (state.api) { try { await state.api.disconnect(); } catch {} }
       const provider = new WsProvider(url);
       state.api = await ApiPromise.create({ provider, noInitWarn: true });
+
+      state.api.on('disconnected', () => {
+        if (!state.api) return;
+        state.api = null;
+        dom.connectBtn.disabled = false;
+        dom.disconnectBtn.disabled = true;
+        dom.disconnectBtn.classList.remove('btn-active');
+        dom.networkPresetTrigger.disabled = false;
+        dom.customUrl.disabled = false;
+        dom.chainInfoBar.textContent = '';
+        setStatus(dom.networkStatus, 'Connection lost — click Connect to reconnect', 'err');
+        pushTimelineEvent('warn', 'Connection lost');
+        onDisconnected();
+      });
+
       const [runtime, header] = await Promise.all([
         state.api.rpc.state.getRuntimeVersion(),
         state.api.rpc.chain.getHeader(),

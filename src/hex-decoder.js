@@ -1,6 +1,7 @@
 import { state } from './state.js';
 import { dom, log, setupCustomDropdown } from './ui.js';
 import { escapeHtml } from './chain-utils.js';
+import { appendKvRow } from './event-card.js';
 
 let decodeTypeHintValue = 'auto';
 
@@ -62,7 +63,7 @@ export function renderDecodedResult(decoded, container) {
   card.className = 'diagnostics-card';
 
   const title = document.createElement('h3');
-  title.style.cssText = 'font-size:0.82rem;color:var(--accent);margin-bottom:6px;';
+  title.className = 'decode-result-title';
   title.textContent = `${decoded.section}.${decoded.method}`;
   card.appendChild(title);
 
@@ -74,9 +75,9 @@ export function renderDecodedResult(decoded, container) {
   card.appendChild(badge);
 
   if (decoded.isSigned && decoded.signer) {
-    addRow(card, 'Signer', decoded.signer);
-    if (decoded.nonce) addRow(card, 'Nonce', decoded.nonce);
-    if (decoded.tip) addRow(card, 'Tip', decoded.tip);
+    appendKvRow(card, 'Signer', decoded.signer);
+    if (decoded.nonce) appendKvRow(card, 'Nonce', decoded.nonce);
+    if (decoded.tip) appendKvRow(card, 'Tip', decoded.tip);
   }
 
   if (decoded.args && Object.keys(decoded.args).length > 0) {
@@ -100,19 +101,6 @@ export function renderDecodedResult(decoded, container) {
   }
 
   container.appendChild(card);
-}
-
-function addRow(parent, label, value) {
-  const row = document.createElement('div');
-  row.className = 'diagnostics-row';
-  const k = document.createElement('span');
-  k.className = 'diagnostics-key';
-  k.textContent = label;
-  const v = document.createElement('span');
-  v.className = 'diagnostics-val';
-  v.textContent = value;
-  row.append(k, v);
-  parent.appendChild(row);
 }
 
 export function initHexDecoder() {

@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { dom, log } from './ui.js';
+import { dom } from './ui.js';
 import { truncAddr, escapeHtml } from './chain-utils.js';
 
 export async function fetchProxies(address) {
@@ -51,13 +51,7 @@ export function renderProxyList(proxies, container) {
   container.appendChild(card);
 }
 
-export function initProxyManager() {
-  dom.proxyExecCheck?.addEventListener('change', () => {
-    const checked = dom.proxyExecCheck.checked;
-    dom.proxyExecReal.disabled = !checked;
-    if (!checked) dom.proxyExecReal.value = '';
-  });
-}
+export function initProxyManager() {}
 
 export async function showProxiesForAccount(address) {
   if (!address || !state.api) {

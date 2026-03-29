@@ -49,8 +49,7 @@ export function renderBatchQueue() {
   const title = document.createElement('h3');
   title.textContent = `Batch Queue (${state.batchQueue.length})`;
   const btns = document.createElement('div');
-  btns.style.display = 'flex';
-  btns.style.gap = '4px';
+  btns.className = 'batch-list-actions';
 
   const modes = ['batch', 'batchAll', 'forceBatch'];
   for (const mode of modes) {

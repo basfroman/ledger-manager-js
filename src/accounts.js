@@ -16,6 +16,7 @@ import {
   ICON_COPY,
   ICON_CHECK,
   LS_ACCOUNT_SOURCE,
+  LS_SELECTED_ACCOUNT,
   RAO_PER_TAO,
   ROUTES,
   SLIP44,
@@ -268,6 +269,7 @@ export function clearAccountsTable() {
   dom.accountsBody.innerHTML = '<tr><td colspan="5" class="text-muted">No accounts loaded</td></tr>';
   state.lastLoadedAccounts = [];
   state.selectedAccount = null;
+  try { localStorage.removeItem(LS_SELECTED_ACCOUNT); } catch {}
   state.walletExtensionKey = null;
   state.accountsLoaded = false;
   dom.refreshBalancesBtn.disabled = true;
@@ -313,6 +315,7 @@ export function renderAccounts(accounts, animate = false) {
     `;
     tr.addEventListener('click', () => {
       state.selectedAccount = acct;
+      try { localStorage.setItem(LS_SELECTED_ACCOUNT, acct.address); } catch {}
       renderAccounts(state.lastLoadedAccounts);
       updateAccountsToolbar();
       onAccountsChanged();
@@ -354,6 +357,18 @@ export async function fetchBalances(accounts) {
 
 export function updateAccountsToolbar() {
   dom.refreshBalancesBtn.disabled = !(state.api && state.lastLoadedAccounts.length);
+}
+
+function tryRestoreSelectedAccount() {
+  if (state.selectedAccount) return;
+  const savedAddr = localStorage.getItem(LS_SELECTED_ACCOUNT);
+  if (!savedAddr) return;
+  const match = state.lastLoadedAccounts.find(a => a.address === savedAddr);
+  if (match) {
+    state.selectedAccount = match;
+    renderAccounts(state.lastLoadedAccounts);
+    onAccountsChanged();
+  }
 }
 
 async function handleLoadExtensionAccounts() {
@@ -410,6 +425,7 @@ async function handleLoadExtensionAccounts() {
         setLedgerStatus(`${normalized.length} extension account(s) loaded`, 'ok');
       }
     }
+    tryRestoreSelectedAccount();
     onAccountsChanged();
   } catch (err) {
     setLedgerStatus(err.message || String(err), 'err');
@@ -446,6 +462,7 @@ async function handleLoadLedgerBatch() {
     setLedgerStatus(`Device ready | ${state.lastLoadedAccounts.length} accounts loaded`, 'ok');
     pushTimelineEvent('info', `${newAccounts.length} Ledger account(s) loaded`);
     updateAccountsToolbar();
+    tryRestoreSelectedAccount();
 
     if (state.api) {
       setLedgerStatus('Fetching balances...', 'busy');
@@ -486,6 +503,7 @@ async function handleLoadSingleLedgerAccount() {
     setLedgerStatus(`Device ready | ${state.lastLoadedAccounts.length} accounts loaded`, 'ok');
     pushTimelineEvent('info', `Ledger account #${idx} loaded`);
     updateAccountsToolbar();
+    tryRestoreSelectedAccount();
 
     if (state.api) {
       setLedgerStatus(`Fetching balance for account #${idx}...`, 'busy');

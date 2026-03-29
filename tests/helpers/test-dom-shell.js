@@ -50,7 +50,6 @@ export function mountAppShell() {
         <div id="extrinsicArgs"></div>
         <button id="feeEstimateBtn"></button><button id="dryRunBtn"></button><button id="addToBatchBtn"></button><button id="extrinsicSendBtn"></button>
         <div id="feeEstimate"></div>
-        <div id="proxyExecWrap" class="hidden"><input type="checkbox" id="proxyExecCheck" /><input id="proxyExecReal" /></div>
       </div>
       <div id="txStatus"></div>
       <div id="txResultWrap"><div class="log-wrap"><button class="log-copy-btn" id="resultCopyBtn"></button><div id="txResult"></div></div></div>

@@ -57,20 +57,15 @@ export function renderEventCard(ev, { onExpand } = {}) {
   return card;
 }
 
-export function renderKvCard(items) {
-  const card = document.createElement('div');
-  card.className = 'diagnostics-card';
-  for (const [key, val] of items) {
-    const row = document.createElement('div');
-    row.className = 'diagnostics-row';
-    const k = document.createElement('span');
-    k.className = 'diagnostics-key';
-    k.textContent = key;
-    const v = document.createElement('span');
-    v.className = 'diagnostics-val';
-    v.textContent = String(val);
-    row.append(k, v);
-    card.appendChild(row);
-  }
-  return card;
+export function appendKvRow(parent, label, value) {
+  const row = document.createElement('div');
+  row.className = 'diagnostics-row';
+  const k = document.createElement('span');
+  k.className = 'diagnostics-key';
+  k.textContent = label;
+  const v = document.createElement('span');
+  v.className = 'diagnostics-val';
+  v.textContent = String(value);
+  row.append(k, v);
+  parent.appendChild(row);
 }

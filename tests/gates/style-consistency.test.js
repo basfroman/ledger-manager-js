@@ -88,4 +88,15 @@ describe('Gate 7 — UI Style Consistency', () => {
       'ID-based display rules on route panels override .hidden — use :not(.hidden) instead',
     ).toEqual([]);
   });
+
+  it('batch and decode components use CSS classes not inline styles', () => {
+    const { readFileSync } = require('fs');
+    const { join } = require('path');
+    const SRC = join(import.meta.dirname, '../../src');
+    const batchSrc = readFileSync(join(SRC, 'batch.js'), 'utf8');
+    const decodeSrc = readFileSync(join(SRC, 'hex-decoder.js'), 'utf8');
+    expect(batchSrc, 'batch.js should not use inline style.display').not.toMatch(/\.style\.display\s*=/);
+    expect(batchSrc, 'batch.js should not use inline style.gap').not.toMatch(/\.style\.gap\s*=/);
+    expect(decodeSrc, 'hex-decoder.js should not use inline style.cssText').not.toMatch(/\.style\.cssText\s*=/);
+  });
 });

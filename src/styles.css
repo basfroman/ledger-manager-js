@@ -1431,6 +1431,10 @@ tr[data-selectable]:hover { background: var(--surface2); cursor: pointer; }
   justify-content: space-between;
   margin-bottom: 6px;
 }
+.batch-list-actions {
+  display: flex;
+  gap: 4px;
+}
 .batch-list-header h3 {
   font-size: 0.78rem;
   color: var(--accent);
@@ -1495,6 +1499,11 @@ tr[data-selectable]:hover { background: var(--surface2); cursor: pointer; }
 
 /* ── Hex Decoder ── */
 
+.decode-result-title {
+  font-size: 0.82rem;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
 .decode-section summary {
   cursor: pointer;
   color: var(--text2);

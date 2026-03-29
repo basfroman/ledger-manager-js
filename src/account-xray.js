@@ -2,6 +2,7 @@ import { state } from './state.js';
 import { log } from './ui.js';
 import { truncAddr } from './chain-utils.js';
 import { RAO_PER_TAO } from './constants.js';
+import { appendKvRow } from './event-card.js';
 
 export async function fetchAccountProfile(address) {
   if (!state.api) return null;
@@ -54,14 +55,14 @@ export function renderAccountXRay(profile, container) {
   card.appendChild(addrRow);
 
   if (profile.nonce != null) {
-    addRow(card, 'Nonce', String(profile.nonce));
+    appendKvRow(card, 'Nonce', String(profile.nonce));
   }
 
   if (profile.balances) {
     const b = profile.balances;
-    addRow(card, 'Free', `${b.free.toFixed(4)} TAO`);
-    addRow(card, 'Reserved', `${b.reserved.toFixed(4)} TAO`);
-    addRow(card, 'Frozen', `${b.frozen.toFixed(4)} TAO`);
+    appendKvRow(card, 'Free', `${b.free.toFixed(4)} TAO`);
+    appendKvRow(card, 'Reserved', `${b.reserved.toFixed(4)} TAO`);
+    appendKvRow(card, 'Frozen', `${b.frozen.toFixed(4)} TAO`);
   }
 
   if (profile.proxies?.length) {
@@ -71,22 +72,9 @@ export function renderAccountXRay(profile, container) {
     card.appendChild(proxTitle);
 
     for (const p of profile.proxies) {
-      addRow(card, truncAddr(p.delegate), `${p.proxyType} (delay: ${p.delay})`);
+      appendKvRow(card, truncAddr(p.delegate), `${p.proxyType} (delay: ${p.delay})`);
     }
   }
 
   container.appendChild(card);
-}
-
-function addRow(parent, label, value) {
-  const row = document.createElement('div');
-  row.className = 'diagnostics-row';
-  const k = document.createElement('span');
-  k.className = 'diagnostics-key';
-  k.textContent = label;
-  const v = document.createElement('span');
-  v.className = 'diagnostics-val';
-  v.textContent = value;
-  row.append(k, v);
-  parent.appendChild(row);
 }
