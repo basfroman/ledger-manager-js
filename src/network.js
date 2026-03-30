@@ -112,7 +112,7 @@ export function initNetwork({ onConnected, onDisconnected }) {
 
       dom.networkStatus.textContent = '';
       const token = getChainToken(state.api);
-      dom.chainInfoBar.textContent = `Subtensor spec. ${runtime.specVersion} | Block #${blockNum} | ${token}`;
+      dom.chainInfoBar.innerHTML = `Subtensor spec. ${runtime.specVersion} | Block <span class="block-num">#${blockNum.toLocaleString()}</span> | ${token}`;
       dom.connectBtn.disabled = true;
       dom.disconnectBtn.disabled = false;
       dom.disconnectBtn.classList.add('btn-active');

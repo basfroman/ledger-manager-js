@@ -14,6 +14,7 @@ import {
   syncPanelAvailability,
   parseAccentRgbTuple,
   initCopyButton,
+  updateChainBlock,
   dom,
 } from '../src/ui.js';
 import { state } from '../src/state.js';
@@ -146,5 +147,21 @@ describe('syncPanelAvailability', () => {
     syncPanelAvailability();
     expect(dom.routeDataHub.classList.contains('panel-locked')).toBe(false);
     expect(dom.builderPane.classList.contains('panel-locked')).toBe(false);
+  });
+});
+
+describe('updateChainBlock', () => {
+  it('updates .block-num text and adds ticked class', () => {
+    dom.chainInfoBar.innerHTML = 'spec | Block <span class="block-num">#1</span> | TAO';
+    updateChainBlock(7_836_142);
+    const el = dom.chainInfoBar.querySelector('.block-num');
+    expect(el.textContent).toBe('#7,836,142');
+    expect(el.classList.contains('ticked')).toBe(true);
+  });
+
+  it('is a no-op when .block-num is absent', () => {
+    dom.chainInfoBar.textContent = 'no span here';
+    expect(() => updateChainBlock(123)).not.toThrow();
+    expect(dom.chainInfoBar.textContent).toBe('no span here');
   });
 });

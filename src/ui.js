@@ -209,6 +209,18 @@ export function updateTopBar() {
   }
 }
 
+/**
+ * Updates the block number in chainInfoBar. Sole owner of .block-num updates.
+ */
+export function updateChainBlock(num) {
+  const el = dom.chainInfoBar.querySelector('.block-num');
+  if (!el) return;
+  el.textContent = `#${num.toLocaleString()}`;
+  el.classList.remove('ticked');
+  void el.offsetWidth;
+  el.classList.add('ticked');
+}
+
 export function setLedgerStatus(text, tone) {
   dom.ledgerStatusEl.textContent = text;
   dom.ledgerStatusEl.className = `status-box mt-12 status-${tone}`;

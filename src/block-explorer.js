@@ -1,7 +1,7 @@
 import { ROUTES, MAX_EXPLORER_BLOCKS, ICON_COPY, ICON_CHECK, COPY_FEEDBACK_MS } from './constants.js';
 import { buildCallDocHtml, formatDocs, getChainDecimals, getChainToken, truncAddr, copyToClipboard, escapeHtml } from './chain-utils.js';
 import { state } from './state.js';
-import { dom, setActiveRoute } from './ui.js';
+import { dom, setActiveRoute, updateChainBlock } from './ui.js';
 import { selectExtrinsic } from './tx.js';
 import { getContactName } from './address-book.js';
 
@@ -175,6 +175,8 @@ function onNewHead(header) {
     extrinsicsCount: 0,
     receivedAt: Date.now(),
   };
+
+  updateChainBlock(blockInfo.number);
 
   state.explorerBlocks.unshift(blockInfo);
   if (state.explorerBlocks.length > MAX_EXPLORER_BLOCKS) {
