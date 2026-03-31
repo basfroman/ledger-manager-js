@@ -1,3 +1,4 @@
+import { copyToClipboard } from './chain-utils.js';
 
 const ICON_CHEVRON = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
 
@@ -64,8 +65,15 @@ export function appendKvRow(parent, label, value) {
   k.className = 'diagnostics-key';
   k.textContent = label;
   const v = document.createElement('span');
-  v.className = 'diagnostics-val';
+  v.className = 'diagnostics-val copiable';
   v.textContent = String(value);
+  v.addEventListener('click', async () => {
+    const ok = await copyToClipboard(String(value));
+    if (ok) {
+      v.classList.add('copied');
+      setTimeout(() => v.classList.remove('copied'), 600);
+    }
+  });
   row.append(k, v);
   parent.appendChild(row);
 }

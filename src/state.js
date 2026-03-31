@@ -31,4 +31,5 @@ export const state = {
   finalizedHead: null,
   finalizedUnsub: null,
   addressBook: [],
+  chainHealth: null,
 };

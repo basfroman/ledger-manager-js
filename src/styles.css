@@ -781,6 +781,9 @@ body {
 }
 .diagnostics-key { color: var(--text2); }
 .diagnostics-val { color: var(--text); word-break: break-all; text-align: right; max-width: 60%; }
+.diagnostics-val.copiable { cursor: pointer; transition: color 0.15s; }
+.diagnostics-val.copiable:hover { color: var(--accent); }
+.diagnostics-val.copiable.copied { color: var(--green); }
 
 /* ── Headings ── */
 
@@ -882,6 +885,8 @@ button:disabled { opacity: 0.3; cursor: not-allowed; }
 .btn-danger { background: rgba(255, 69, 58, 0.12); color: var(--red); border: 1px solid rgba(255, 69, 58, 0.2); }
 .btn-danger:hover:not(:disabled) { background: rgba(255, 69, 58, 0.2); }
 .btn-sm { padding: 4px 10px; font-size: 0.78rem; }
+.btn-send { margin-left: 4px; }
+.netuid-input { width: 80px; }
 
 .btn-explorer {
   display: inline-flex;

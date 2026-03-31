@@ -129,6 +129,7 @@
           <button type="button" class="active" data-pane="queryPane" data-title="Queries">Queries</button>
           <button type="button" data-pane="constantsPane" data-title="Constants">Constants</button>
           <button type="button" data-pane="metadataPane" data-title="Metadata">Metadata</button>
+          <button type="button" class="hidden" id="bittensorTabBtn" data-pane="bittensorPane" data-title="Bittensor">Bittensor</button>
         </div>
       </div>
 
@@ -203,6 +204,24 @@
       </div>
 
       <div id="metadataPane" class="hidden"></div>
+
+      <div id="bittensorPane" class="hidden">
+        <h3>Subnets</h3>
+        <div id="bittensorSubnets" class="mt-8"></div>
+        <h3 class="mt-8">Neuron Lookup</h3>
+        <div class="row mt-8">
+          <input id="neuronNetuid" class="explorer-search-input netuid-input" type="number" min="0" placeholder="NetUID" />
+          <input id="neuronUid" class="explorer-search-input netuid-input" type="number" min="0" placeholder="UID" />
+          <button id="neuronFetchBtn" class="btn-primary btn-sm" disabled>Fetch</button>
+        </div>
+        <div id="neuronResult" class="mt-8"></div>
+        <h3 class="mt-8">Registration Info</h3>
+        <div class="row mt-8">
+          <input id="regNetuid" class="explorer-search-input netuid-input" type="number" min="0" placeholder="NetUID" />
+          <button id="regFetchBtn" class="btn-primary btn-sm" disabled>Fetch</button>
+        </div>
+        <div id="regResult" class="mt-8"></div>
+      </div>
     </div>
 
     <!-- Route: Accounts -->
@@ -329,6 +348,20 @@
         </div>
         <div id="decodeResult" class="mt-8"></div>
       </details>
+      <details class="decode-section mt-8">
+        <summary>Verify Signature</summary>
+        <input id="verifyAddress" class="mt-8" placeholder="Address (5...)" />
+        <textarea id="verifyMessage" class="mt-8" placeholder="Message" rows="2"></textarea>
+        <input id="verifySignature" class="mt-8" placeholder="Signature (0x...)" />
+        <div class="row mt-8">
+          <button id="verifyBtn" class="btn-primary btn-sm">Verify</button>
+        </div>
+        <div id="verifyResult" class="mt-8"></div>
+      </details>
+      <p class="hint text-sm mt-8">
+        Developer console: use <code>window.taoForge.api</code> and
+        <code>window.taoForge.selectedAccount</code> in browser DevTools (F12).
+      </p>
       <section id="logSection" class="mt-8 diag-log-section">
         <div class="section-header">
           <h2>Raw Log</h2>
@@ -350,12 +383,21 @@
     <div class="doc-block mt-8 hidden" id="queryDocs" data-insight-route="dataHub"></div>
     <div class="doc-block mt-8 hidden" id="constantDocs" data-insight-route="dataHub"></div>
     <div class="doc-block mt-8 hidden" id="metadataDocs" data-insight-route="dataHub"></div>
+    <div class="doc-block mt-8 hidden" id="bittensorDocs" data-insight-route="dataHub"></div>
     <div id="accountXRay" class="hidden" data-insight-route="accounts"></div>
     <div id="proxyManager" class="hidden" data-insight-route="accounts"></div>
     <details id="addressBookSection" data-insight-route="accounts" style="display:none">
       <summary>Address Book</summary>
       <div id="addressBookContent"></div>
     </details>
+    <div id="signMessageSection" class="hidden" data-insight-route="accounts">
+      <h3 class="xray-section-title">Sign Message</h3>
+      <p class="hint text-sm">Wallet only. Ledger does not support signRaw.</p>
+      <textarea id="signMessageInput" class="mt-8" placeholder="Message to sign..." rows="2"></textarea>
+      <button id="signMessageBtn" class="btn-primary btn-sm mt-8" disabled>Sign</button>
+      <div id="signMessageResult" class="mt-8"></div>
+    </div>
+    <div id="explorerChainInfo" data-insight-route="explorer"></div>
     <div class="insight-preflight" data-insight-route="compose" style="display:none">
       <h3 class="xray-section-title">Readiness</h3>
       <div id="preflightChecklist"></div>
@@ -363,11 +405,11 @@
   </aside>
 </div>
 
-<div id="timelineDock" class="timeline-dock">
+<div id="timelineDock" class="timeline-dock collapsed">
   <div class="timeline-resize-handle" id="timelineResizeHandle"></div>
   <div class="section-header">
     <h2>Timeline</h2>
-    <button type="button" class="btn-secondary btn-sm" id="footerCollapseBtn">Collapse</button>
+    <button type="button" class="btn-secondary btn-sm" id="footerCollapseBtn">Expand</button>
   </div>
   <div id="batchList" class="batch-list hidden"></div>
   <div id="timelineList" class="timeline-list" role="log" aria-live="polite"></div>

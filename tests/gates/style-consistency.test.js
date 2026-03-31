@@ -99,4 +99,15 @@ describe('Gate 7 — UI Style Consistency', () => {
     expect(batchSrc, 'batch.js should not use inline style.gap').not.toMatch(/\.style\.gap\s*=/);
     expect(decodeSrc, 'hex-decoder.js should not use inline style.cssText').not.toMatch(/\.style\.cssText\s*=/);
   });
+
+  it('new feature modules do not use inline style.marginLeft or style.cssText', () => {
+    const { readFileSync } = require('fs');
+    const { join } = require('path');
+    const SRC = join(import.meta.dirname, '../../src');
+    for (const name of ['verify-signature.js', 'sign-message.js', 'bittensor-info.js', 'accounts.js']) {
+      const src = readFileSync(join(SRC, name), 'utf8');
+      expect(src, `${name} should not use inline style.marginLeft`).not.toMatch(/\.style\.marginLeft\s*=/);
+      expect(src, `${name} should not use inline style.cssText`).not.toMatch(/\.style\.cssText\s*=/);
+    }
+  });
 });

@@ -194,10 +194,11 @@ function addDiagRow(parent, label, value) {
   parent.appendChild(row);
 }
 
-export function startHealthPolling(api, container) {
+export function startHealthPolling(api, container, onData) {
   stopHealthPolling();
   const poll = async () => {
     const health = await fetchChainHealth(api);
+    if (onData) onData(health);
     renderChainHealth(health, container);
   };
   poll();

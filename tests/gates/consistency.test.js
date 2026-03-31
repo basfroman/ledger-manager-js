@@ -67,4 +67,14 @@ describe('Gate 3 — Consistency', () => {
     expect(selects.length, 'Native <select> elements are forbidden — use custom-select').toBe(0);
     expect(datalists.length, 'Native <datalist> elements are forbidden — use custom-select').toBe(0);
   });
+
+  it('every data-insight-route value maps to a valid ROUTES entry', () => {
+    const { ROUTES } = require('../../src/constants.js');
+    const validRoutes = Object.values(ROUTES);
+    const els = document.querySelectorAll('[data-insight-route]');
+    expect(els.length).toBeGreaterThan(0);
+    for (const el of els) {
+      expect(validRoutes, `Invalid insight route: ${el.dataset.insightRoute}`).toContain(el.dataset.insightRoute);
+    }
+  });
 });

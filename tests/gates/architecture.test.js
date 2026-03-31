@@ -88,4 +88,20 @@ describe('Gate 1 — Architecture Hygiene', () => {
       expect(exportCount, `${name} should export at least one function`).toBeGreaterThan(0);
     }
   });
+
+  it('session-diagnostics.js does not import from state.js (module purity)', () => {
+    const file = files.find(f => f.name === 'session-diagnostics.js');
+    expect(file).toBeTruthy();
+    expect(file.content).not.toMatch(/from\s+['"]\.\/state/);
+  });
+
+  it('feature pack modules (verify-signature, sign-message, bittensor-info) each export functions', () => {
+    const featureModules = ['verify-signature.js', 'sign-message.js', 'bittensor-info.js'];
+    for (const name of featureModules) {
+      const file = files.find(f => f.name === name);
+      expect(file, `${name} should exist`).toBeTruthy();
+      const exportCount = (file.content.match(/export\s+(?:async\s+)?function/g) || []).length;
+      expect(exportCount, `${name} should export at least one function`).toBeGreaterThan(0);
+    }
+  });
 });

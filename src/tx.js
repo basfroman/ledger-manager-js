@@ -34,6 +34,8 @@ import {
   renderTimeline,
 } from './ui.js';
 
+let walletHintShown = false;
+
 export function handleTxError(err) {
   const error = err instanceof Error ? err : new Error(err != null ? String(err) : 'Unknown error');
   log(`ERROR: ${error.message}`);
@@ -579,6 +581,12 @@ export function initTx() {
         await signAndSendExtension(tx, fromAddr);
       } else {
         await signAndSendLedger(tx, fromAddr, accountIndex, addressOffset);
+      }
+      if (!walletHintShown && /multisig|proxy/i.test(`${pallet}.${method}`)) {
+        walletHintShown = true;
+        pushTimelineEvent('info', 'Tip: For multi-sig management, try Tao Wallet',
+          null, { url: 'https://tao.app/wallet', label: 'Get Tao Wallet' });
+        renderTimeline();
       }
     } catch (err) {
       handleTxError(err);

@@ -5,7 +5,7 @@ import { state } from './state.js';
 import { dom, initUI, syncPanelAvailability, setActiveRoute, updateTopBar, renderTimeline } from './ui.js';
 import { initNetwork } from './network.js';
 import { initMonitor, initAccounts, updateAccountsToolbar } from './accounts.js';
-import { initTx, populatePallets, resetExtrinsicBuilder, updateExtrinsicSendButton } from './tx.js';
+import { initTx, populatePallets, resetExtrinsicBuilder, updateExtrinsicSendButton, selectExtrinsic } from './tx.js';
 import { initQuery, populateQueryPallets, resetQueryBuilder, stopAllWatches } from './query.js';
 import { initConstants, populateConstantPallets, resetConstantsViewer } from './constants-viewer.js';
 import { buildPaletteIndex, initPalette } from './palette.js';
@@ -19,6 +19,14 @@ import { initAddressBook } from './address-book.js';
 import { initMetadataBrowser, populateMetadata, resetMetadataBrowser } from './metadata-browser.js';
 import { initProxyManager, showProxiesForAccount } from './proxy-manager.js';
 import { fetchAccountProfile, renderAccountXRay } from './account-xray.js';
+import { initVerify } from './verify-signature.js';
+import { initSignMessage, updateSignVisibility } from './sign-message.js';
+import { initBittensorInfo, populateBittensorInfo, resetBittensorInfo } from './bittensor-info.js';
+
+window.taoForge = Object.freeze({
+  get api() { return state.api; },
+  get selectedAccount() { return state.selectedAccount; },
+});
 
 const savedRoute = localStorage.getItem(LS_ACTIVE_ROUTE);
 if (savedRoute && Object.values(ROUTES).includes(savedRoute)) {
@@ -40,14 +48,22 @@ initEventStream();
 initAddressBook();
 initMetadataBrowser();
 initProxyManager();
+initVerify();
+initSignMessage();
+initBittensorInfo();
 
 initAccounts({
+  onQuickSend() {
+    selectExtrinsic('balances', 'transferKeepAlive');
+    setActiveRoute(ROUTES.COMPOSE);
+  },
   onAccountsChanged() {
     updateAccountsToolbar();
     updateExtrinsicSendButton();
     updateTopBar();
     syncPanelAvailability();
     renderTimeline();
+    updateSignVisibility();
 
     if (state.selectedAccount && state.api) {
       fetchAccountProfile(state.selectedAccount.address)
@@ -80,7 +96,8 @@ initNetwork({
     renderTimeline();
     renderDiagnosticsDOM(collectDiagnostics(state), dom.diagnosticsCard);
     activateExplorer();
-    startHealthPolling(state.api, dom.chainHealth);
+    startHealthPolling(state.api, dom.chainHealth, (h) => { state.chainHealth = h; });
+    populateBittensorInfo();
     if (!state.accountsLoaded && state.activeRoute === ROUTES.COMPOSE) {
       setActiveRoute(ROUTES.ACCOUNTS);
     }
@@ -103,6 +120,7 @@ initNetwork({
     dom.chainHealth.innerHTML = '';
     dom.nonceInfo.innerHTML = '';
     dom.accountXRay.classList.add('hidden');
+    resetBittensorInfo();
   },
 });
 

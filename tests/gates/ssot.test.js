@@ -76,4 +76,14 @@ describe('Gate 2 — Single Source of Truth', () => {
     expect(fnMatches).toHaveLength(1);
     expect(lockMatches.length).toBeGreaterThan(0);
   });
+
+  it('DATA_HUB_PANES array length matches pane elements in HTML', () => {
+    const uiSource = readFileSync(join(import.meta.dirname, '../../src/ui.js'), 'utf8');
+    const paneEntries = uiSource.match(/pane:\s*'(\w+)'/g);
+    const htmlSource = readFileSync(join(import.meta.dirname, '../../index.html'), 'utf8');
+    for (const m of paneEntries) {
+      const id = m.match(/'(\w+)'/)[1];
+      expect(htmlSource, `HTML must contain pane element id="${id}"`).toContain(`id="${id}"`);
+    }
+  });
 });

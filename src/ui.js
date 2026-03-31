@@ -129,6 +129,27 @@ export function initDomRefs() {
     commandPalette: $('commandPalette'),
     paletteSearch: $('paletteSearch'),
     paletteResults: $('paletteResults'),
+    verifyAddress: $('verifyAddress'),
+    verifyMessage: $('verifyMessage'),
+    verifySignature: $('verifySignature'),
+    verifyBtn: $('verifyBtn'),
+    verifyResult: $('verifyResult'),
+    signMessageSection: $('signMessageSection'),
+    signMessageInput: $('signMessageInput'),
+    signMessageBtn: $('signMessageBtn'),
+    signMessageResult: $('signMessageResult'),
+    explorerChainInfo: $('explorerChainInfo'),
+    bittensorTabBtn: $('bittensorTabBtn'),
+    bittensorPane: $('bittensorPane'),
+    bittensorSubnets: $('bittensorSubnets'),
+    neuronNetuid: $('neuronNetuid'),
+    neuronUid: $('neuronUid'),
+    neuronFetchBtn: $('neuronFetchBtn'),
+    neuronResult: $('neuronResult'),
+    regNetuid: $('regNetuid'),
+    regFetchBtn: $('regFetchBtn'),
+    regResult: $('regResult'),
+    bittensorDocs: $('bittensorDocs'),
   });
 }
 
@@ -174,6 +195,7 @@ const DATA_HUB_PANES = [
   { pane: 'queryPane', docs: 'queryDocs' },
   { pane: 'constantsPane', docs: 'constantDocs' },
   { pane: 'metadataPane', docs: 'metadataDocs' },
+  { pane: 'bittensorPane', docs: 'bittensorDocs' },
 ];
 
 /**

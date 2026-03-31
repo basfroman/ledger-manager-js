@@ -4,6 +4,7 @@ import { state } from './state.js';
 import { dom, setActiveRoute, updateChainBlock } from './ui.js';
 import { selectExtrinsic } from './tx.js';
 import { getContactName } from './address-book.js';
+import { appendKvRow } from './event-card.js';
 
 const ICON_FILTER = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
 
@@ -15,6 +16,86 @@ const ICON_CHEVRON = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none
 
 let ageInterval = null;
 let fetchGeneration = 0;
+
+export function renderChainInfoCompact() {
+  if (!dom.explorerChainInfo) return;
+  dom.explorerChainInfo.innerHTML = '';
+  const best = state.explorerBlocks[0]?.number;
+  if (best == null) return;
+  const fin = typeof state.finalizedHead === 'number' ? state.finalizedHead : null;
+  const peers = state.chainHealth?.peers;
+  appendKvRow(dom.explorerChainInfo, 'Best Block', `#${best.toLocaleString()}`);
+  if (fin != null) {
+    appendKvRow(dom.explorerChainInfo, 'Finalized', `#${fin.toLocaleString()}`);
+    appendKvRow(dom.explorerChainInfo, 'Gap', `${best - fin} blocks`);
+  }
+  if (peers != null) {
+    appendKvRow(dom.explorerChainInfo, 'Peers', peers);
+  }
+}
+
+function buildFilterSuggestions() {
+  if (!state.api) return [];
+  const items = [];
+  try {
+    for (const p of Object.keys(state.api.events)) {
+      for (const m of Object.keys(state.api.events[p])) {
+        items.push(`${p}.${m}`);
+      }
+    }
+  } catch {}
+  try {
+    for (const p of Object.keys(state.api.tx)) {
+      for (const m of Object.keys(state.api.tx[p])) {
+        if (!items.includes(`${p}.${m}`)) items.push(`${p}.${m}`);
+      }
+    }
+  } catch {}
+  return items.sort();
+}
+
+function attachFilterAutocomplete(input) {
+  const wrap = document.createElement('div');
+  wrap.className = 'address-autocomplete-wrap';
+  const dd = document.createElement('div');
+  dd.className = 'custom-select-dropdown address-autocomplete-dropdown hidden';
+
+  function rebuild(filter) {
+    dd.innerHTML = '';
+    const suggestions = buildFilterSuggestions();
+    const parts = (filter || '').split(',');
+    const q = parts[parts.length - 1].trim().toLowerCase();
+    let count = 0;
+    for (const s of suggestions) {
+      if (q && !s.toLowerCase().includes(q)) continue;
+      const opt = document.createElement('div');
+      opt.className = 'custom-select-option';
+      opt.dataset.value = s;
+      opt.innerHTML = `<span class="custom-select-label">${s}</span>`;
+      dd.appendChild(opt);
+      if (++count >= 8) break;
+    }
+    dd.classList.toggle('hidden', count === 0);
+  }
+
+  input.addEventListener('focus', () => rebuild(input.value));
+  input.addEventListener('input', () => rebuild(input.value));
+  input.addEventListener('blur', () => { setTimeout(() => dd.classList.add('hidden'), 150); });
+  dd.addEventListener('mousedown', (e) => {
+    const opt = e.target.closest('.custom-select-option');
+    if (!opt) return;
+    e.preventDefault();
+    const parts = input.value.split(',').map(s => s.trim()).filter(Boolean);
+    parts[parts.length > 0 ? parts.length - 1 : 0] = opt.dataset.value;
+    input.value = parts.join(', ');
+    input.dispatchEvent(new Event('input'));
+    dd.classList.add('hidden');
+  });
+
+  input.parentNode?.insertBefore(wrap, input);
+  wrap.appendChild(input);
+  wrap.appendChild(dd);
+}
 
 export function formatBalance(rawValue, api) {
   if (!api || rawValue == null) return String(rawValue ?? '');
@@ -183,6 +264,7 @@ function onNewHead(header) {
     state.explorerBlocks.pop();
   }
 
+  renderChainInfoCompact();
   prependBlockRow(blockInfo);
 
   if (state.explorerLive) {
@@ -198,6 +280,7 @@ export async function activateExplorer() {
   dom.explorerSearchBtn.disabled = false;
   dom.explorerLiveBtn.disabled = false;
   if (state.explorerLive) dom.explorerLiveBtn.classList.add('btn-live-active');
+  renderChainInfoCompact();
 
   try {
     state.explorerUnsub = await state.api.rpc.chain.subscribeNewHeads(onNewHead);
@@ -363,6 +446,7 @@ function renderBlockDetail(signedBlock, events, timestamp, blockHash) {
   const filterCount = document.createElement('span');
   filterCount.className = 'explorer-filter-count';
   filterRow.append(filterIcon, filterInput, filterCount);
+  attachFilterAutocomplete(filterInput);
 
   stickyHeader.append(topRow, filterRow);
 

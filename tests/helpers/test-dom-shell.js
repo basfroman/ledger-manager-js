@@ -62,6 +62,7 @@ export function mountAppShell() {
           <button type="button" class="active" data-pane="queryPane" data-title="Queries">Queries</button>
           <button type="button" data-pane="constantsPane" data-title="Constants">Constants</button>
           <button type="button" data-pane="metadataPane" data-title="Metadata">Metadata</button>
+          <button type="button" class="hidden" id="bittensorTabBtn" data-pane="bittensorPane" data-title="Bittensor">Bittensor</button>
         </div>
       </div>
       <div id="queryPane">
@@ -92,6 +93,13 @@ export function mountAppShell() {
         <div id="constantResultWrap"><div class="log-wrap"><button class="log-copy-btn" id="constantResultCopyBtn"></button><pre id="constantResult"></pre></div></div>
       </div>
       <div id="metadataPane" class="hidden"></div>
+      <div id="bittensorPane" class="hidden">
+        <div id="bittensorSubnets"></div>
+        <input id="neuronNetuid" /><input id="neuronUid" /><button id="neuronFetchBtn"></button>
+        <div id="neuronResult"></div>
+        <input id="regNetuid" /><button id="regFetchBtn"></button>
+        <div id="regResult"></div>
+      </div>
     </div>
     <div id="routeAccounts" class="hidden" role="tabpanel">
       <section id="sourceSection">
@@ -156,6 +164,11 @@ export function mountAppShell() {
         <button id="decodeBtn"></button>
         <div id="decodeResult"></div>
       </details>
+      <details class="decode-section">
+        <summary>Verify Signature</summary>
+        <input id="verifyAddress" /><textarea id="verifyMessage"></textarea><input id="verifySignature" />
+        <button id="verifyBtn"></button><div id="verifyResult"></div>
+      </details>
       <section id="logSection">
         <div class="log-wrap"><button class="log-copy-btn" id="logCopyBtn"></button><pre class="log-panel" id="logPanel"></pre></div>
       </section>
@@ -172,12 +185,17 @@ export function mountAppShell() {
     <div id="accountXRay" class="hidden" data-insight-route="accounts"></div>
     <div id="proxyManager" class="hidden" data-insight-route="accounts"></div>
     <details id="addressBookSection" data-insight-route="accounts" style="display:none"><summary>Address Book</summary><div id="addressBookContent"></div></details>
+    <div id="signMessageSection" class="hidden" data-insight-route="accounts">
+      <textarea id="signMessageInput"></textarea><button id="signMessageBtn" disabled></button><div id="signMessageResult"></div>
+    </div>
+    <div id="explorerChainInfo" data-insight-route="explorer"></div>
+    <div class="doc-block hidden" id="bittensorDocs" data-insight-route="dataHub"></div>
     <div class="insight-preflight" data-insight-route="compose" style="display:none"><div id="preflightChecklist"></div></div>
   </aside>
 </div>
-<div id="timelineDock" class="timeline-dock">
+<div id="timelineDock" class="timeline-dock collapsed">
   <div class="section-header">
-    <button type="button" id="footerCollapseBtn">Collapse</button>
+    <button type="button" id="footerCollapseBtn">Expand</button>
   </div>
   <div id="batchList" class="batch-list hidden"></div>
   <div id="timelineList" class="timeline-list" role="log" aria-live="polite"></div>

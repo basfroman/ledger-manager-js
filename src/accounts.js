@@ -85,6 +85,7 @@ export function normalizeExtensionAccounts(injectedAccounts) {
 export let monitor = null;
 
 let onAccountsChanged = () => {};
+let onQuickSend = () => {};
 
 export function initMonitor() {
   monitor = new LedgerManager({
@@ -329,6 +330,17 @@ export function renderAccounts(accounts, animate = false) {
         setTimeout(() => { copyBtn.innerHTML = ICON_COPY; }, COPY_FEEDBACK_MS);
       }
     });
+    if (state.api) {
+      const sendBtn = document.createElement('button');
+      sendBtn.className = 'btn-secondary btn-sm btn-send';
+      sendBtn.textContent = '↗ Transfer';
+      sendBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        state.selectedAccount = acct;
+        onQuickSend(acct.address);
+      });
+      tr.querySelector('.text-right').appendChild(sendBtn);
+    }
     dom.accountsBody.appendChild(tr);
   }
 }
@@ -519,8 +531,9 @@ async function handleLoadSingleLedgerAccount() {
   }
 }
 
-export function initAccounts({ onAccountsChanged: cb }) {
+export function initAccounts({ onAccountsChanged: cb, onQuickSend: qsCb }) {
   onAccountsChanged = cb;
+  onQuickSend = qsCb || (() => {});
 
   initAccountSourceToggle((mode) => {
     const next = mode === ACCOUNT_SOURCE.WALLET ? ACCOUNT_SOURCE.WALLET : ACCOUNT_SOURCE.LEDGER;
