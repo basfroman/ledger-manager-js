@@ -327,34 +327,6 @@
           <code>--features metadata-hash</code>, or signing may fail with <code>CannotLookup</code>.
         </p>
       </details>
-      <details class="decode-section mt-8">
-        <summary>Hex Decoder</summary>
-        <textarea id="decodeInput" class="mt-8" placeholder="0x..." rows="3"></textarea>
-        <div class="row mt-8">
-          <div class="custom-select" id="decodeTypeHintWrap">
-            <button class="custom-select-trigger" id="decodeTypeHintTrigger" type="button">
-              <span class="custom-select-label">Auto-detect</span>
-            </button>
-            <div class="custom-select-dropdown hidden" id="decodeTypeHintDropdown">
-              <div class="custom-select-option selected" data-value="auto"><span class="custom-select-label">Auto-detect</span></div>
-              <div class="custom-select-option" data-value="extrinsic"><span class="custom-select-label">Extrinsic</span></div>
-              <div class="custom-select-option" data-value="call"><span class="custom-select-label">Call</span></div>
-            </div>
-          </div>
-          <button id="decodeBtn" class="btn-primary btn-sm" disabled>Decode</button>
-        </div>
-        <div id="decodeResult" class="mt-8"></div>
-      </details>
-      <details class="decode-section mt-8">
-        <summary>Verify Signature</summary>
-        <input id="verifyAddress" class="mt-8" placeholder="Address (5...)" />
-        <textarea id="verifyMessage" class="mt-8" placeholder="Message" rows="2"></textarea>
-        <input id="verifySignature" class="mt-8" placeholder="Signature (0x...)" />
-        <div class="row mt-8">
-          <button id="verifyBtn" class="btn-primary btn-sm">Verify</button>
-        </div>
-        <div id="verifyResult" class="mt-8"></div>
-      </details>
       <p class="hint text-sm mt-8">
         Developer console: use <code>window.taoForge.api</code> and
         <code>window.taoForge.selectedAccount</code> in browser DevTools (F12).
@@ -421,6 +393,34 @@
       <h3 class="xray-section-title">Readiness</h3>
       <div id="preflightChecklist"></div>
     </div>
+    <details class="decode-section mt-8" data-insight-route="diagnostics">
+      <summary>Hex Decoder</summary>
+      <textarea id="decodeInput" class="mt-8" placeholder="0x..." rows="3"></textarea>
+      <div class="row mt-8">
+        <div class="custom-select" id="decodeTypeHintWrap">
+          <button class="custom-select-trigger" id="decodeTypeHintTrigger" type="button">
+            <span class="custom-select-label">Auto-detect</span>
+          </button>
+          <div class="custom-select-dropdown hidden" id="decodeTypeHintDropdown">
+            <div class="custom-select-option selected" data-value="auto"><span class="custom-select-label">Auto-detect</span></div>
+            <div class="custom-select-option" data-value="extrinsic"><span class="custom-select-label">Extrinsic</span></div>
+            <div class="custom-select-option" data-value="call"><span class="custom-select-label">Call</span></div>
+          </div>
+        </div>
+        <button id="decodeBtn" class="btn-primary btn-sm" disabled>Decode</button>
+      </div>
+      <div id="decodeResult" class="mt-8"></div>
+    </details>
+    <details class="decode-section mt-8" data-insight-route="diagnostics">
+      <summary>Verify Signature</summary>
+      <input id="verifyAddress" class="mt-8" placeholder="Address (5...)" />
+      <textarea id="verifyMessage" class="mt-8" placeholder="Message" rows="2"></textarea>
+      <input id="verifySignature" class="mt-8" placeholder="Signature (0x...)" />
+      <div class="row mt-8">
+        <button id="verifyBtn" class="btn-primary btn-sm">Verify</button>
+      </div>
+      <div id="verifyResult" class="mt-8"></div>
+    </details>
   </aside>
 </div>
 

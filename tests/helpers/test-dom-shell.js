@@ -149,23 +149,6 @@ export function mountAppShell() {
       <div id="chainHealth"></div>
       <div id="diagnosticsCard"></div>
       <div id="nonceInfo"></div>
-      <details class="decode-section">
-        <summary>Hex Decoder</summary>
-        <textarea id="decodeInput"></textarea>
-        <div class="custom-select" id="decodeTypeHintWrap">
-          <button class="custom-select-trigger" id="decodeTypeHintTrigger" type="button"><span class="custom-select-label">Auto-detect</span></button>
-          <div class="custom-select-dropdown hidden" id="decodeTypeHintDropdown">
-            <div class="custom-select-option selected" data-value="auto"><span class="custom-select-label">Auto-detect</span></div>
-          </div>
-        </div>
-        <button id="decodeBtn"></button>
-        <div id="decodeResult"></div>
-      </details>
-      <details class="decode-section">
-        <summary>Verify Signature</summary>
-        <input id="verifyAddress" /><textarea id="verifyMessage"></textarea><input id="verifySignature" />
-        <button id="verifyBtn"></button><div id="verifyResult"></div>
-      </details>
       <section id="logSection">
         <div class="log-wrap"><button class="log-copy-btn" id="logCopyBtn"></button><pre class="log-panel" id="logPanel"></pre></div>
       </section>
@@ -197,6 +180,23 @@ export function mountAppShell() {
     <div id="explorerChainInfo" data-insight-route="explorer"></div>
     <div class="doc-block hidden" id="bittensorDocs" data-insight-route="dataHub"></div>
     <div class="insight-preflight" data-insight-route="compose" style="display:none"><div id="preflightChecklist"></div></div>
+    <details class="decode-section" data-insight-route="diagnostics">
+      <summary>Hex Decoder</summary>
+      <textarea id="decodeInput"></textarea>
+      <div class="custom-select" id="decodeTypeHintWrap">
+        <button class="custom-select-trigger" id="decodeTypeHintTrigger" type="button"><span class="custom-select-label">Auto-detect</span></button>
+        <div class="custom-select-dropdown hidden" id="decodeTypeHintDropdown">
+          <div class="custom-select-option selected" data-value="auto"><span class="custom-select-label">Auto-detect</span></div>
+        </div>
+      </div>
+      <button id="decodeBtn"></button>
+      <div id="decodeResult"></div>
+    </details>
+    <details class="decode-section" data-insight-route="diagnostics">
+      <summary>Verify Signature</summary>
+      <input id="verifyAddress" /><textarea id="verifyMessage"></textarea><input id="verifySignature" />
+      <button id="verifyBtn"></button><div id="verifyResult"></div>
+    </details>
   </aside>
 </div>
 <div id="timelineDock" class="timeline-dock collapsed">
