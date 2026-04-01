@@ -53,7 +53,7 @@ export function resolveEnabledExtensionName(enabled, selectedKey) {
 export function mergeAccountsData(existing, newAccounts) {
   const out = [...existing];
   for (const acct of newAccounts) {
-    const idx = out.findIndex(a => a.accountIndex === acct.accountIndex);
+    const idx = out.findIndex(a => a.address === acct.address);
     if (idx >= 0) out[idx] = acct;
     else out.push(acct);
   }
@@ -114,17 +114,9 @@ export function initMonitor() {
           break;
         case LEDGER_STATUS.READY: {
           const ver = detail.appVersion || '?';
-          const firstReady = detail.previousStatus !== LEDGER_STATUS.READY;
           syncLedgerLoadButtonsFromMonitor();
           const suffix = state.accountsLoaded ? ` | ${state.lastLoadedAccounts.length} accounts loaded` : '';
           setLedgerStatus(`Device ready — Polkadot app v${ver}${suffix}`, 'ok');
-          if (
-            state.accountSource === ACCOUNT_SOURCE.LEDGER
-            && firstReady
-            && !state.accountsLoaded
-          ) {
-            dom.loadAccountsBtn.click();
-          }
           break;
         }
       }
@@ -148,13 +140,17 @@ function syncLedgerLoadButtonsFromMonitor() {
 }
 
 function onDeviceBecameNotReady() {
-  if (state.accountSource !== ACCOUNT_SOURCE.LEDGER) {
-    syncLedgerLoadButtonsFromMonitor();
-    return;
-  }
-  state.accountsLoaded = false;
   syncLedgerLoadButtonsFromMonitor();
-  clearAccountsTable();
+  if (state.accountSource !== ACCOUNT_SOURCE.LEDGER) return;
+  state.lastLoadedAccounts = state.lastLoadedAccounts.filter(
+    a => a.accountSource !== ACCOUNT_SOURCE.LEDGER
+  );
+  state.accountsLoaded = state.lastLoadedAccounts.length > 0;
+  if (state.selectedAccount?.accountSource !== ACCOUNT_SOURCE.WALLET) {
+    state.selectedAccount = null;
+  }
+  renderAccounts(state.lastLoadedAccounts);
+  onAccountsChanged();
 }
 
 const WALLET_EXT_PLACEHOLDER_CHOOSE = '— Choose extension —';
@@ -193,11 +189,6 @@ function updateWalletLoadButtonState() {
   dom.loadExtensionAccountsBtn.disabled = state.accountSource !== ACCOUNT_SOURCE.WALLET || !hasPick;
 }
 
-/** Sets `body[data-account-source]` for CSS theme (Ledger vs Wallet accent). */
-export function syncAccountSourceThemeToBody() {
-  document.body.dataset.accountSource = state.accountSource;
-}
-
 /** Show Ledger USB UI vs extension-only UI; sync button disabled state. */
 export function applyAccountSourceUI() {
   const ledger = state.accountSource === ACCOUNT_SOURCE.LEDGER;
@@ -212,11 +203,6 @@ export function applyAccountSourceUI() {
     populateWalletExtensionDropdown();
     if (!state.accountsLoaded) setLedgerStatus('Click Refresh to detect browser extensions', 'neutral');
   }
-  const pathHeader = document.getElementById('pathColHeader');
-  if (pathHeader) {
-    pathHeader.textContent = ledger ? 'Derivation Path' : 'Wallet / Key name';
-  }
-  syncAccountSourceThemeToBody();
 }
 
 export function renderDeviceList(devices) {
@@ -417,9 +403,11 @@ async function handleLoadExtensionAccounts() {
       });
     }
     const normalized = normalizeExtensionAccounts(filtered);
-    state.lastLoadedAccounts = normalized;
-    state.accountsLoaded = normalized.length > 0;
-    renderAccounts(normalized, true);
+    state.lastLoadedAccounts = state.lastLoadedAccounts.filter(
+      a => a.accountSource !== ACCOUNT_SOURCE.WALLET
+    );
+    mergeAccounts(normalized);
+    state.accountsLoaded = state.lastLoadedAccounts.length > 0;
     updateAccountsToolbar();
     if (normalized.length > 0) pushTimelineEvent('info', `${normalized.length} extension account(s) loaded`);
     if (normalized.length === 0) {
@@ -468,6 +456,7 @@ async function handleLoadLedgerBatch() {
       },
     });
 
+    for (const a of newAccounts) a.accountSource = ACCOUNT_SOURCE.LEDGER;
     mergeAccounts(newAccounts);
     state.accountsLoaded = true;
     dom.loadAccountsBtn.textContent = 'Load 5 More';
@@ -475,6 +464,7 @@ async function handleLoadLedgerBatch() {
     pushTimelineEvent('info', `${newAccounts.length} Ledger account(s) loaded`);
     updateAccountsToolbar();
     tryRestoreSelectedAccount();
+    onAccountsChanged();
 
     if (state.api) {
       setLedgerStatus('Fetching balances...', 'busy');
@@ -509,6 +499,7 @@ async function handleLoadSingleLedgerAccount() {
 
   try {
     const account = await monitor.getAccount(idx);
+    account.accountSource = ACCOUNT_SOURCE.LEDGER;
 
     mergeAccounts([account]);
     state.accountsLoaded = true;
@@ -516,6 +507,7 @@ async function handleLoadSingleLedgerAccount() {
     pushTimelineEvent('info', `Ledger account #${idx} loaded`);
     updateAccountsToolbar();
     tryRestoreSelectedAccount();
+    onAccountsChanged();
 
     if (state.api) {
       setLedgerStatus(`Fetching balance for account #${idx}...`, 'busy');
@@ -539,16 +531,9 @@ export function initAccounts({ onAccountsChanged: cb, onQuickSend: qsCb }) {
     const next = mode === ACCOUNT_SOURCE.WALLET ? ACCOUNT_SOURCE.WALLET : ACCOUNT_SOURCE.LEDGER;
     if (next === state.accountSource) return;
 
-    const hadAccount = Boolean(state.selectedAccount);
     state.accountSource = next;
     try { localStorage.setItem(LS_ACCOUNT_SOURCE, next); } catch {}
     applyAccountSourceUI();
-
-    if (!hadAccount) {
-      clearAccountsTable();
-      setActiveRoute(ROUTES.ACCOUNTS);
-    }
-
     onAccountsChanged();
   });
   for (const b of dom.accountSourceToggle.querySelectorAll('button')) {

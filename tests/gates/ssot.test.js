@@ -10,6 +10,7 @@ import { mountAppShell } from '../helpers/test-dom-shell.js';
 import { initDomRefs, dom, setActiveRoute, setDataHubTab, syncPanelAvailability } from '../../src/ui.js';
 import { updateExtrinsicSendButton } from '../../src/tx.js';
 import { state } from '../../src/state.js';
+import { ROUTES, ROUTE_TO_DOM_ID } from '../../src/constants.js';
 
 beforeEach(() => {
   mountAppShell();
@@ -75,6 +76,13 @@ describe('Gate 2 — Single Source of Truth', () => {
     const fnMatches = uiSource.match(/function syncPanelAvailability/g);
     expect(fnMatches).toHaveLength(1);
     expect(lockMatches.length).toBeGreaterThan(0);
+  });
+
+  it('ROUTES.SETTINGS exists and has matching DOM element', () => {
+    expect(ROUTES.SETTINGS).toBe('settings');
+    expect(ROUTE_TO_DOM_ID[ROUTES.SETTINGS]).toBe('routeSettings');
+    expect(dom.routeSettings).toBeTruthy();
+    expect(dom.routeSettings.id).toBe('routeSettings');
   });
 
   it('DATA_HUB_PANES array length matches pane elements in HTML', () => {

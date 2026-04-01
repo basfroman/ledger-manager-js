@@ -1,10 +1,10 @@
 import './deps.js';
 
-import { ACCOUNT_SOURCE, LS_ACCOUNT_SOURCE, LS_ACTIVE_ROUTE, ROUTES } from './constants.js';
+import { ACCOUNT_SOURCE, LS_ACCOUNT_SOURCE, LS_ACTIVE_ROUTE, LS_SELECTED_ACCOUNT, ROUTES } from './constants.js';
 import { state } from './state.js';
-import { dom, initUI, syncPanelAvailability, setActiveRoute, updateTopBar, renderTimeline } from './ui.js';
+import { dom, initUI, syncPanelAvailability, setActiveRoute, updateTopBar, renderTimeline, setupCustomDropdown, populateAccountDropdown } from './ui.js';
 import { initNetwork } from './network.js';
-import { initMonitor, initAccounts, updateAccountsToolbar } from './accounts.js';
+import { initMonitor, initAccounts, updateAccountsToolbar, renderAccounts } from './accounts.js';
 import { initTx, populatePallets, resetExtrinsicBuilder, updateExtrinsicSendButton, selectExtrinsic } from './tx.js';
 import { initQuery, populateQueryPallets, resetQueryBuilder, stopAllWatches } from './query.js';
 import { initConstants, populateConstantPallets, resetConstantsViewer } from './constants-viewer.js';
@@ -22,6 +22,7 @@ import { fetchAccountProfile, renderAccountXRay } from './account-xray.js';
 import { initVerify } from './verify-signature.js';
 import { initSignMessage, updateSignVisibility } from './sign-message.js';
 import { initBittensorInfo, populateBittensorInfo, resetBittensorInfo } from './bittensor-info.js';
+import { initSettings } from './settings.js';
 
 window.taoForge = Object.freeze({
   get api() { return state.api; },
@@ -38,6 +39,22 @@ if (savedSource === ACCOUNT_SOURCE.WALLET || savedSource === ACCOUNT_SOURCE.LEDG
 }
 
 initUI();
+
+setupCustomDropdown(dom.accountSelectTrigger, dom.accountSelectDropdown, 'accountSelectWrap', (address) => {
+  const acct = state.lastLoadedAccounts.find(a => a.address === address);
+  if (acct && acct !== state.selectedAccount) {
+    state.selectedAccount = acct;
+    try { localStorage.setItem(LS_SELECTED_ACCOUNT, acct.address); } catch {}
+    renderAccounts(state.lastLoadedAccounts);
+    updateAccountsToolbar();
+    updateExtrinsicSendButton();
+    updateTopBar();
+    syncPanelAvailability();
+    renderTimeline();
+    updateSignVisibility();
+  }
+});
+
 initPalette();
 initMonitor();
 initDrafts();
@@ -51,6 +68,7 @@ initProxyManager();
 initVerify();
 initSignMessage();
 initBittensorInfo();
+initSettings();
 
 initAccounts({
   onQuickSend() {
@@ -58,6 +76,7 @@ initAccounts({
     setActiveRoute(ROUTES.COMPOSE);
   },
   onAccountsChanged() {
+    populateAccountDropdown(state.lastLoadedAccounts);
     updateAccountsToolbar();
     updateExtrinsicSendButton();
     updateTopBar();

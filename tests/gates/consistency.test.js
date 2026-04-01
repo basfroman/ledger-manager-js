@@ -54,7 +54,7 @@ describe('Gate 3 — Consistency', () => {
 
   it('navRail buttons all have data-route and role="tab"', () => {
     const buttons = dom.navRail.querySelectorAll('[data-route]');
-    expect(buttons.length).toBe(5);
+    expect(buttons.length).toBe(6);
     for (const btn of buttons) {
       expect(btn.dataset.route).toBeTruthy();
       expect(btn.getAttribute('role')).toBe('tab');

@@ -42,7 +42,7 @@ export function handleTxError(err) {
   log(`Stack: ${error.stack}`);
   pushTimelineEvent('error', `TX Error: ${error.message}`);
   renderTimeline();
-  if (state.accountSource === ACCOUNT_SOURCE.WALLET) {
+  if (state.selectedAccount?.accountSource === ACCOUNT_SOURCE.WALLET) {
     setTxStatus(`Error: ${error.message}`, 'err');
     dom.txResultWrap.classList.remove('hidden');
     dom.txResult.textContent = `${error.stack ?? error.message}`;
@@ -554,7 +554,7 @@ export function initTx() {
 
     const { hasMetaHash, devChain } = logChainContext();
 
-    if (state.accountSource === ACCOUNT_SOURCE.LEDGER) {
+    if (state.selectedAccount?.accountSource === ACCOUNT_SOURCE.LEDGER) {
       if (!hasMetaHash) {
         log('FATAL: chain has no CheckMetadataHash');
         setTxStatus(MSG_LEDGER_NO_METADATA_HASH, 'err');
@@ -577,7 +577,7 @@ export function initTx() {
       log(`args: ${JSON.stringify(args)}`);
 
       const tx = state.api.tx[pallet][method](...args);
-      if (state.accountSource === ACCOUNT_SOURCE.WALLET) {
+      if (state.selectedAccount?.accountSource === ACCOUNT_SOURCE.WALLET) {
         await signAndSendExtension(tx, fromAddr);
       } else {
         await signAndSendLedger(tx, fromAddr, accountIndex, addressOffset);

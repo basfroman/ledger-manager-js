@@ -33,16 +33,15 @@
 
   <div class="top-bar-divider"></div>
 
-  <div class="top-bar-section">
-    <div class="seg-control seg-control-sm" id="accountSourceToggle">
-      <button type="button" class="active" data-mode="wallet">Wallet</button>
-      <button type="button" data-mode="ledger">Ledger</button>
-    </div>
-  </div>
-
   <div class="top-bar-section top-bar-chain">
     <div id="signingAccountBar" class="top-bar-account hidden">
-      <code id="signingAddr"></code>
+      <span>Account:</span>
+      <div class="custom-select custom-select-compact" id="accountSelectWrap">
+        <button class="custom-select-trigger" id="accountSelectTrigger" type="button" disabled>
+          <span class="custom-select-label">No account</span>
+        </button>
+        <div class="custom-select-dropdown hidden" id="accountSelectDropdown"></div>
+      </div>
       <span class="top-bar-sep">|</span>
     </div>
     <div id="chainInfoBar" class="chain-info-bar text-sm"></div>
@@ -70,6 +69,10 @@
     <button type="button" class="nav-rail-btn" role="tab" data-route="diagnostics" aria-selected="false" title="Diagnostics">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
       <span>Debug</span>
+    </button>
+    <button type="button" class="nav-rail-btn" role="tab" data-route="settings" aria-selected="false" title="Settings">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      <span>Settings</span>
     </button>
   </nav>
 
@@ -230,6 +233,10 @@
         <div class="section-header">
           <h2>Source</h2>
         </div>
+        <div class="seg-control seg-control-sm mb-12" id="accountSourceToggle">
+          <button type="button" class="active" data-mode="wallet">Wallet</button>
+          <button type="button" data-mode="ledger">Ledger</button>
+        </div>
         <div id="walletOnlyWrap">
           <label for="walletExtensionTrigger">Browser extension</label>
           <div class="wallet-extension-row mt-8">
@@ -274,7 +281,7 @@
         <div class="accounts-scroll">
           <table>
             <thead>
-              <tr><th>#</th><th>Address</th><th id="pathColHeader">Wallet / Key name</th><th>Balance (TAO)</th><th></th></tr>
+              <tr><th>#</th><th>Address</th><th id="pathColHeader">Source / Path</th><th>Balance (TAO)</th><th></th></tr>
             </thead>
             <tbody id="accountsBody">
               <tr><td colspan="5" class="text-muted">No accounts loaded</td></tr>
@@ -369,6 +376,28 @@
         <div class="log-wrap diag-log-wrap">
           <button class="log-copy-btn" id="logCopyBtn" title="Copy log"></button>
           <pre class="result-block log-panel" id="logPanel"></pre>
+        </div>
+      </section>
+    </div>
+
+    <!-- Route: Settings -->
+    <div id="routeSettings" class="hidden" role="tabpanel">
+      <h2>Settings</h2>
+      <section class="mt-12">
+        <h3>Accent Color</h3>
+        <div class="accent-picker-row mt-8" id="accentPickerRow">
+          <input type="color" id="accentColorInput" value="#e8943c" aria-label="Pick accent color" />
+          <span class="accent-hex-label" id="accentHexLabel">#e8943c</span>
+          <button type="button" class="btn-secondary btn-sm" id="accentResetBtn">Reset</button>
+        </div>
+        <div class="accent-presets-row mt-8" id="accentPresets">
+          <button type="button" class="accent-dot active" data-preset="Orange" title="Orange"></button>
+          <button type="button" class="accent-dot" data-preset="Purple" title="Purple"></button>
+          <button type="button" class="accent-dot" data-preset="Blue" title="Blue"></button>
+          <button type="button" class="accent-dot" data-preset="Green" title="Green"></button>
+          <button type="button" class="accent-dot" data-preset="Rose" title="Rose"></button>
+          <button type="button" class="accent-dot" data-preset="Cyan" title="Cyan"></button>
+          <button type="button" class="accent-dot" data-preset="Gold" title="Gold"></button>
         </div>
       </section>
     </div>

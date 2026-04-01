@@ -20,10 +20,10 @@ describe('mergeAccountsData', () => {
     expect(mergeAccountsData([], [a, b])).toEqual([b, a]);
   });
 
-  it('replaces same accountIndex', () => {
-    const existing = [{ accountIndex: 1, address: 'old' }];
-    const updated = [{ accountIndex: 1, address: 'new' }];
-    expect(mergeAccountsData(existing, updated)).toEqual([{ accountIndex: 1, address: 'new' }]);
+  it('replaces same address', () => {
+    const existing = [{ accountIndex: 0, address: 'same' }];
+    const updated = [{ accountIndex: 1, address: 'same' }];
+    expect(mergeAccountsData(existing, updated)).toEqual([{ accountIndex: 1, address: 'same' }]);
   });
 });
 

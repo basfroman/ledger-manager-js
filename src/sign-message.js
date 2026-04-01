@@ -6,7 +6,7 @@ import { state } from './state.js';
 import { dom, addResultAction } from './ui.js';
 
 export function updateSignVisibility() {
-  const show = state.accountSource === ACCOUNT_SOURCE.WALLET && Boolean(state.selectedAccount);
+  const show = state.selectedAccount?.accountSource === ACCOUNT_SOURCE.WALLET;
   dom.signMessageSection.classList.toggle('hidden', !show);
   dom.signMessageBtn.disabled = !show;
 }

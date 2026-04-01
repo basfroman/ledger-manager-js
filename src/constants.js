@@ -47,6 +47,7 @@ export const ROUTES = Object.freeze({
   ACCOUNTS: 'accounts',
   EXPLORER: 'explorer',
   DIAGNOSTICS: 'diagnostics',
+  SETTINGS: 'settings',
 });
 
 export const ROUTE_TO_DOM_ID = Object.freeze({
@@ -55,6 +56,7 @@ export const ROUTE_TO_DOM_ID = Object.freeze({
   [ROUTES.ACCOUNTS]: 'routeAccounts',
   [ROUTES.EXPLORER]: 'routeExplorer',
   [ROUTES.DIAGNOSTICS]: 'routeDiagnostics',
+  [ROUTES.SETTINGS]: 'routeSettings',
 });
 
 export const MAX_TIMELINE_EVENTS = 500;
@@ -76,5 +78,6 @@ export const LS_DRAFTS = 'tao-forge-drafts';
 export const LS_SELECTED_ACCOUNT = 'tao-forge-selected-account';
 export const LS_INSIGHT_WIDTH = 'tao-forge-insight-width';
 export const LS_TIMELINE_HEIGHT = 'tao-forge-timeline-height';
+export const LS_ACCENT_THEME = 'tao-forge-accent-theme';
 
 export const SIGNING_MODE_METADATA_HASH = 1;

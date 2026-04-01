@@ -15,15 +15,15 @@ export function mountAppShell() {
     </div>
     <div id="networkStatus"></div>
   </div>
-  <div class="top-bar-section">
-    <div class="seg-control seg-control-sm" id="accountSourceToggle">
-      <button type="button" class="active" data-mode="wallet">Wallet</button>
-      <button type="button" data-mode="ledger">Ledger</button>
-    </div>
-  </div>
   <div class="top-bar-section top-bar-chain">
     <div id="signingAccountBar" class="top-bar-account hidden">
-      <span class="account-dot"></span><code id="signingAddr"></code>
+      <span>Account:</span>
+      <div class="custom-select custom-select-compact" id="accountSelectWrap">
+        <button class="custom-select-trigger" id="accountSelectTrigger" type="button" disabled>
+          <span class="custom-select-label">No account</span>
+        </button>
+        <div class="custom-select-dropdown hidden" id="accountSelectDropdown"></div>
+      </div>
     </div>
     <div id="chainInfoBar" class="chain-info-bar"></div>
   </div>
@@ -35,6 +35,7 @@ export function mountAppShell() {
     <button type="button" class="nav-rail-btn" role="tab" data-route="dataHub" aria-selected="false"><span>Data</span></button>
     <button type="button" class="nav-rail-btn" role="tab" data-route="accounts" aria-selected="false"><span>Accounts</span></button>
     <button type="button" class="nav-rail-btn" role="tab" data-route="diagnostics" aria-selected="false"><span>Debug</span></button>
+    <button type="button" class="nav-rail-btn" role="tab" data-route="settings" aria-selected="false"><span>Settings</span></button>
   </nav>
   <main id="mainCanvas" class="main-canvas">
     <div id="routeCompose" class="hidden" role="tabpanel">
@@ -103,6 +104,10 @@ export function mountAppShell() {
     </div>
     <div id="routeAccounts" class="hidden" role="tabpanel">
       <section id="sourceSection">
+        <div class="seg-control seg-control-sm mb-12" id="accountSourceToggle">
+          <button type="button" class="active" data-mode="wallet">Wallet</button>
+          <button type="button" data-mode="ledger">Ledger</button>
+        </div>
         <div id="walletOnlyWrap">
           <div class="custom-select wallet-extension-select-wrap" id="walletExtensionWrap">
             <button type="button" class="custom-select-trigger" id="walletExtensionTrigger" aria-expanded="false">
@@ -124,7 +129,7 @@ export function mountAppShell() {
       <section id="accountsSection" class="panel-locked">
         <h2 id="accountsTitle">Accounts</h2>
         <button id="refreshBalancesBtn"></button>
-        <div class="accounts-scroll"><table><thead><tr><th>#</th><th>Address</th><th id="pathColHeader">Wallet / Key name</th><th>Balance (TAO)</th><th></th></tr></thead><tbody id="accountsBody"></tbody></table></div>
+        <div class="accounts-scroll"><table><thead><tr><th>#</th><th>Address</th><th id="pathColHeader">Source / Path</th><th>Balance (TAO)</th><th></th></tr></thead><tbody id="accountsBody"></tbody></table></div>
       </section>
     </div>
     <div id="routeExplorer" role="tabpanel">
@@ -172,6 +177,15 @@ export function mountAppShell() {
       <section id="logSection">
         <div class="log-wrap"><button class="log-copy-btn" id="logCopyBtn"></button><pre class="log-panel" id="logPanel"></pre></div>
       </section>
+    </div>
+    <div id="routeSettings" class="hidden" role="tabpanel">
+      <input type="color" id="accentColorInput" value="#e8943c" />
+      <span id="accentHexLabel">#e8943c</span>
+      <button id="accentResetBtn"></button>
+      <div class="accent-presets-row" id="accentPresets">
+        <button type="button" class="accent-dot active" data-preset="Orange"></button>
+        <button type="button" class="accent-dot" data-preset="Purple"></button>
+      </div>
     </div>
   </main>
   <aside id="insightRail" class="insight-rail">

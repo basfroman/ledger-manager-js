@@ -14,6 +14,7 @@ const STATIC_ROUTE_ENTRIES = [
   { type: 'route', kind: 'nav', label: 'Data Hub', route: ROUTES.DATA_HUB },
   { type: 'route', kind: 'nav', label: 'Accounts', route: ROUTES.ACCOUNTS },
   { type: 'route', kind: 'nav', label: 'Diagnostics', route: ROUTES.DIAGNOSTICS },
+  { type: 'route', kind: 'nav', label: 'Settings', route: ROUTES.SETTINGS },
 ];
 
 export function buildPaletteIndex(api) {

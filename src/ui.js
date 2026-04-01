@@ -22,6 +22,7 @@ export function initDomRefs() {
     routeAccounts: $('routeAccounts'),
     routeExplorer: $('routeExplorer'),
     routeDiagnostics: $('routeDiagnostics'),
+    routeSettings: $('routeSettings'),
     explorerBlockList: $('explorerBlockList'),
     explorerDetailPane: $('explorerDetailPane'),
     explorerSearchInput: $('explorerSearchInput'),
@@ -69,7 +70,8 @@ export function initDomRefs() {
     feeEstimateBtn: $('feeEstimateBtn'),
     feeEstimate: $('feeEstimate'),
     signingAccountBar: $('signingAccountBar'),
-    signingAddr: $('signingAddr'),
+    accountSelectTrigger: $('accountSelectTrigger'),
+    accountSelectDropdown: $('accountSelectDropdown'),
     builderPane: $('builderPane'),
     queryPane: $('queryPane'),
     rightPanelToggle: $('rightPanelToggle'),
@@ -160,13 +162,14 @@ export function initDomRefs() {
  */
 export function syncPanelAvailability() {
   const connected = Boolean(state.api);
-  const accountsReady = connected && state.lastLoadedAccounts.length > 0;
+  const hasAccounts = state.lastLoadedAccounts.length > 0;
+  const accountsReady = connected && hasAccounts;
 
-  dom.accountsSection.classList.toggle('panel-locked', !connected);
+  dom.accountsSection.classList.toggle('panel-locked', !connected && !hasAccounts);
   dom.builderPane.classList.toggle('panel-locked', !accountsReady);
   dom.routeDataHub.classList.toggle('panel-locked', !connected);
 
-  dom.accountsSection.setAttribute('aria-disabled', String(!connected));
+  dom.accountsSection.setAttribute('aria-disabled', String(!connected && !hasAccounts));
 }
 
 /**
@@ -224,10 +227,35 @@ export function setDataHubTab(pane) {
  */
 export function updateTopBar() {
   if (state.selectedAccount) {
-    dom.signingAddr.textContent = `Account: ${truncAddr(state.selectedAccount.address)}`;
+    dom.accountSelectTrigger.querySelector('.custom-select-label').textContent = truncAddr(state.selectedAccount.address);
     dom.signingAccountBar.classList.remove('hidden');
   } else {
+    dom.accountSelectTrigger.querySelector('.custom-select-label').textContent = 'No account';
     dom.signingAccountBar.classList.add('hidden');
+  }
+}
+
+function accountDisplayName(a) {
+  if (a.accountSource === ACCOUNT_SOURCE.WALLET) {
+    const parts = (a.derivationPath || '').split(' · ');
+    const name = parts.length > 1 ? parts.slice(1).join(' · ') : (parts[0] || 'Account');
+    return `${name} (${truncAddr(a.address)})`;
+  }
+  return `Ledger #${a.accountIndex} (${truncAddr(a.address)})`;
+}
+
+export function populateAccountDropdown(accounts) {
+  const items = accounts.map(a => ({
+    value: a.address,
+    label: accountDisplayName(a),
+  }));
+  populateCustomDropdown(dom.accountSelectTrigger, dom.accountSelectDropdown, items, 'No account');
+  if (state.selectedAccount) {
+    dom.accountSelectTrigger.querySelector('.custom-select-label').textContent =
+      items.find(i => i.value === state.selectedAccount.address)?.label || truncAddr(state.selectedAccount.address);
+    dom.accountSelectDropdown.querySelectorAll('.custom-select-option').forEach(o => {
+      o.classList.toggle('selected', o.dataset.value === state.selectedAccount.address);
+    });
   }
 }
 
@@ -330,12 +358,15 @@ export function populateCustomDropdown(trigger, dropdown, items, placeholder) {
     dropdown.appendChild(search);
   }
   for (const item of items) {
+    const isObj = typeof item === 'object' && item !== null;
+    const val = isObj ? item.value : item;
+    const lbl = isObj ? item.label : item;
     const div = document.createElement('div');
     div.className = 'custom-select-option';
-    div.dataset.value = item;
+    div.dataset.value = val;
     const label = document.createElement('span');
     label.className = 'custom-select-label';
-    label.textContent = item;
+    label.textContent = lbl;
     div.appendChild(label);
     dropdown.appendChild(div);
   }

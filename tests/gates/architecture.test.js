@@ -104,4 +104,12 @@ describe('Gate 1 — Architecture Hygiene', () => {
       expect(exportCount, `${name} should export at least one function`).toBeGreaterThan(0);
     }
   });
+
+  it('settings.js exports functions and does not import state.js', () => {
+    const file = files.find(f => f.name === 'settings.js');
+    expect(file, 'settings.js should exist').toBeTruthy();
+    const exportCount = (file.content.match(/export\s+(?:async\s+)?function/g) || []).length;
+    expect(exportCount, 'settings.js should export at least one function').toBeGreaterThan(0);
+    expect(file.content, 'settings.js should not import state.js').not.toMatch(/from\s+['"]\.\/state/);
+  });
 });

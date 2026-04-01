@@ -97,7 +97,7 @@ export async function executeBatch(mode = 'batch') {
     const tx = state.api.tx.utility[mode](calls);
     log(`Batch ${mode}: ${calls.length} calls`);
 
-    if (state.accountSource === ACCOUNT_SOURCE.WALLET) {
+    if (state.selectedAccount?.accountSource === ACCOUNT_SOURCE.WALLET) {
       await signAndSendExtension(tx, fromAddr);
     } else {
       if (!chainSupportsMetadataHash(state.api)) {

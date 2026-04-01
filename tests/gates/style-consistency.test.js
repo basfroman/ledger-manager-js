@@ -20,18 +20,15 @@ describe('Gate 7 — UI Style Consistency', () => {
     expect(css).toMatch(/:root\s*\{[^}]*--accent:/s);
   });
 
-  it('body[data-account-source="ledger"] overrides accent for ledger mode', () => {
+  it('accent theme is decoupled from account source (no body[data-account-source] CSS)', () => {
     const css = readFile(STYLES_PATH);
-    expect(css).toContain('body[data-account-source="ledger"]');
-    expect(css).toMatch(/data-account-source="ledger"\]\s*\{[^}]*--accent-rgb/s);
+    expect(css).not.toContain('body[data-account-source');
   });
 
-  it('accent CSS variables defined in :root (wallet default) and ledger override', () => {
+  it('--accent-dim and --accent-glow are computed from --accent-rgb', () => {
     const css = readFile(STYLES_PATH);
-    const rootHasAccent = /:root\s*\{[^}]*--accent-rgb/.test(css);
-    const ledgerBlock = css.includes('data-account-source="ledger"');
-    expect(rootHasAccent).toBe(true);
-    expect(ledgerBlock).toBe(true);
+    expect(css).toMatch(/--accent-dim:\s*rgba\(var\(--accent-rgb\)/);
+    expect(css).toMatch(/--accent-glow:\s*rgba\(var\(--accent-rgb\)/);
   });
 
   it('panel-locked class is defined in CSS', () => {
@@ -104,10 +101,18 @@ describe('Gate 7 — UI Style Consistency', () => {
     const { readFileSync } = require('fs');
     const { join } = require('path');
     const SRC = join(import.meta.dirname, '../../src');
-    for (const name of ['verify-signature.js', 'sign-message.js', 'bittensor-info.js', 'accounts.js']) {
+    for (const name of ['verify-signature.js', 'sign-message.js', 'bittensor-info.js', 'accounts.js', 'settings.js']) {
       const src = readFileSync(join(SRC, name), 'utf8');
       expect(src, `${name} should not use inline style.marginLeft`).not.toMatch(/\.style\.marginLeft\s*=/);
       expect(src, `${name} should not use inline style.cssText`).not.toMatch(/\.style\.cssText\s*=/);
     }
+  });
+
+  it('accent color picker styles are defined in CSS', () => {
+    const css = readFile(STYLES_PATH);
+    expect(css).toContain('.accent-picker-row');
+    expect(css).toContain('#accentColorInput');
+    expect(css).toContain('.accent-dot');
+    expect(css).toContain('.accent-dot.active');
   });
 });
