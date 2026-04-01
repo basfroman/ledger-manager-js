@@ -1,6 +1,5 @@
 import { ACCOUNT_SOURCE, COPY_FEEDBACK_MS, ICON_COPY, ICON_CHECK, LS_ACTIVE_ROUTE, LS_INSIGHT_WIDTH, LS_TIMELINE_HEIGHT, ROUTES, ROUTE_TO_DOM_ID } from './constants.js';
 import { copyToClipboard, truncAddr } from './chain-utils.js';
-import { pushTimelineEvent } from './timeline.js';
 import { state } from './state.js';
 
 const $ = (id) => document.getElementById(id);
@@ -542,21 +541,6 @@ export function addResultAction(container, label, className, onClick) {
   btn.addEventListener('click', onClick);
   container.appendChild(btn);
   return btn;
-}
-
-export function addPinButton(container, title, detail) {
-  const existing = container.querySelector('.btn-pin-timeline');
-  if (existing) existing.remove();
-  const btn = document.createElement('button');
-  btn.className = 'btn-secondary btn-sm btn-pin-timeline mt-8';
-  btn.textContent = '📌 Pin to Timeline';
-  btn.addEventListener('click', () => {
-    pushTimelineEvent('pin', title, detail);
-    renderTimeline();
-    btn.textContent = '✓ Pinned';
-    btn.disabled = true;
-  });
-  container.appendChild(btn);
 }
 
 export function initUI() {

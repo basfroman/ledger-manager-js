@@ -2,7 +2,7 @@ import { createArgInput, collectInputValues } from './arg-input.js';
 import { escapeHtml, formatDocs, highlightJson } from './chain-utils.js';
 import { MAX_WATCHES } from './constants.js';
 import { state } from './state.js';
-import { dom, setupCustomDropdown, populateCustomDropdown, log, renderTimeline, addPinButton, addResultAction } from './ui.js';
+import { dom, setupCustomDropdown, populateCustomDropdown, log, renderTimeline, addResultAction } from './ui.js';
 import { pushTimelineEvent } from './timeline.js';
 
 function buildStorageDocHtml(meta, registry) {
@@ -199,8 +199,6 @@ async function executeQuery() {
     }
 
     log(`Query ${pallet}.${item} OK${atBlock ? ` @${atBlock}` : ''}`);
-    addPinButton(dom.queryResultWrap, `Query: ${pallet}.${item}`, json);
-
     addWatchButton(dom.queryResultWrap, pallet, item, keys);
     addMapBrowseButton(pallet, item);
   } catch (err) {

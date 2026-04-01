@@ -1,6 +1,6 @@
 import { formatDocs, highlightJson } from './chain-utils.js';
 import { state } from './state.js';
-import { dom, setupCustomDropdown, populateCustomDropdown, log, addPinButton } from './ui.js';
+import { dom, setupCustomDropdown, populateCustomDropdown, log } from './ui.js';
 
 function onConstantPalletChanged(pallet) {
   state.cConstantSelectValue = '';
@@ -45,7 +45,6 @@ function onConstantItemChanged(item) {
   dom.constantResult.innerHTML = highlightJson(json);
   dom.constantResultWrap.classList.remove('hidden');
   log(`Constant ${pallet}.${item} = ${JSON.stringify(value)}`);
-  addPinButton(dom.constantResultWrap, `Constant: ${pallet}.${item}`, json);
 }
 
 export function populateConstantPallets(api) {
