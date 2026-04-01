@@ -79,8 +79,8 @@ describe('Gate 1 — Architecture Hygiene', () => {
     }
   });
 
-  it('new modules (preflight, timeline, session-diagnostics, drafts) each export functions', () => {
-    const newModules = ['preflight.js', 'timeline.js', 'session-diagnostics.js', 'drafts.js'];
+  it('new modules (preflight, timeline, session-diagnostics, readiness) each export functions', () => {
+    const newModules = ['preflight.js', 'timeline.js', 'session-diagnostics.js', 'readiness.js'];
     for (const name of newModules) {
       const file = files.find(f => f.name === name);
       expect(file, `${name} should exist`).toBeTruthy();

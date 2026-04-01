@@ -61,7 +61,6 @@ export const ROUTE_TO_DOM_ID = Object.freeze({
 });
 
 export const MAX_TIMELINE_EVENTS = 500;
-export const MAX_DRAFTS = 50;
 export const MAX_EXPLORER_BLOCKS = 200;
 export const MORTAL_ERA_PERIOD = 64;
 export const MAX_WATCHES = 10;
@@ -73,7 +72,6 @@ export const LS_ACCOUNT_SOURCE = 'tao-forge-account-source';
 export const LS_ACTIVE_ROUTE = 'tao-forge-active-route';
 export const LS_ADDRESS_BOOK = 'tao-forge-address-book';
 export const LS_ADDRESS_BOOK_VERSION = 1;
-export const LS_DRAFTS = 'tao-forge-drafts';
 export const LS_SELECTED_ACCOUNT = 'tao-forge-selected-account';
 export const LS_INSIGHT_WIDTH = 'tao-forge-insight-width';
 export const LS_TIMELINE_HEIGHT = 'tao-forge-timeline-height';

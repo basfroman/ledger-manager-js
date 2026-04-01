@@ -20,6 +20,7 @@ import { web3FromAddress } from '@polkadot/extension-dapp';
 import { u8aToHex, merkleizeMetadata } from './deps.js';
 import { monitor } from './accounts.js';
 import { getRpcUrl } from './network.js';
+import { isExtrinsicReady } from './readiness.js';
 import { state } from './state.js';
 import { computePreflight, renderPreflightDOM } from './preflight.js';
 import { pushTimelineEvent } from './timeline.js';
@@ -203,7 +204,17 @@ export async function broadcastSignedTx(signedTx) {
   const TX_TIMEOUT_MS = 120_000;
   const result = await new Promise((resolve, reject) => {
     let done = false;
-    const finish = (fn) => { if (done) return; done = true; clearTimeout(timer); fn(); };
+    let unsub = null;
+
+    const cleanup = () => {
+      clearTimeout(timer);
+      if (typeof unsub === 'function') {
+        try { unsub(); } catch {}
+        unsub = null;
+      }
+    };
+
+    const finish = (fn) => { if (done) return; done = true; cleanup(); fn(); };
 
     const timer = setTimeout(() => {
       finish(() => reject(new Error(`Transaction timed out after ${TX_TIMEOUT_MS / 1000}s without block inclusion`)));
@@ -282,12 +293,20 @@ export async function broadcastSignedTx(signedTx) {
         log(`FinalityTimeout: finality could not be achieved`);
         finish(() => reject(new Error('Transaction finality timeout: the network could not finalize the block')));
       }
+    }).then(u => {
+      unsub = u;
+      if (done) cleanup();
     }).catch(err => {
       log(`send() error: ${err.message}`);
       finish(() => reject(err));
     });
   });
 
+  displayTxResult(result);
+  return result;
+}
+
+function displayTxResult(result) {
   log('');
   log('═══ RESULT ═══');
   log(`txHash: ${result.txHash}`);
@@ -326,8 +345,6 @@ export async function broadcastSignedTx(signedTx) {
   pushTimelineEvent('success', `TX Success: ${result.txHash.slice(0, 18)}… in block #${result.blockNumber}`, '', explorer);
   renderTimeline();
   matrixRain();
-
-  return result;
 }
 
 export function populatePallets(apiInst) {
@@ -363,7 +380,7 @@ export function collectArgs() {
 }
 
 export function updateExtrinsicSendButton() {
-  if (!state.api || !state.selectedAccount || !state.palletSelectValue || !state.methodSelectValue) {
+  if (!isExtrinsicReady(state)) {
     dom.extrinsicSendBtn.disabled = true;
     dom.feeEstimateBtn.disabled = true;
     dom.dryRunBtn.disabled = true;

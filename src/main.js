@@ -10,13 +10,12 @@ import { initQuery, populateQueryPallets, resetQueryBuilder, stopAllWatches } fr
 import { initConstants, populateConstantPallets, resetConstantsViewer } from './constants-viewer.js';
 import { buildPaletteIndex, initPalette } from './palette.js';
 import { collectDiagnostics, renderDiagnosticsDOM, startHealthPolling, stopHealthPolling, fetchNonceInfo, renderNonceInfo } from './session-diagnostics.js';
-import { initDrafts } from './drafts.js';
 import { initBlockExplorer, activateExplorer, deactivateExplorer } from './block-explorer.js';
 import { initBatch } from './batch.js';
 import { initHexDecoder } from './hex-decoder.js';
 import { initAddressBook } from './address-book.js';
-import { initMetadataBrowser, populateMetadata, resetMetadataBrowser } from './metadata-browser.js';
-import { initProxyManager, showProxiesForAccount } from './proxy-manager.js';
+import { populateMetadata, resetMetadataBrowser } from './metadata-browser.js';
+import { showProxiesForAccount } from './proxy-manager.js';
 import { fetchAccountProfile, renderAccountXRay } from './account-xray.js';
 import { initVerify } from './verify-signature.js';
 import { initSignMessage, updateSignVisibility } from './sign-message.js';
@@ -55,13 +54,10 @@ setupCustomDropdown(dom.accountSelectTrigger, dom.accountSelectDropdown, 'accoun
 
 initPalette();
 initMonitor();
-initDrafts();
 initBlockExplorer();
 initBatch();
 initHexDecoder();
 initAddressBook();
-initMetadataBrowser();
-initProxyManager();
 initVerify();
 initSignMessage();
 initSettings();

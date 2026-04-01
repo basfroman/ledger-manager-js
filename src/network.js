@@ -104,13 +104,15 @@ export function initNetwork({ onConnected, onDisconnected }) {
       const hasMetaHash = chainSupportsMetadataHash(state.api);
       const devChain = isDevChain(state.api);
 
-      let statusLine = `Connected: Subtensor spec. ${runtime.specVersion} | Block #${blockNum}`;
-      if (devChain) statusLine += ' | DEV CHAIN (metadata hash will be broken)';
-      if (!hasMetaHash) {
-        statusLine += ' | WARNING: Ledger needs CheckMetadataHash; Wallet (extension) may still work';
-      }
+      const warnings = [];
+      if (devChain) warnings.push('DEV CHAIN (metadata hash will be broken)');
+      if (!hasMetaHash) warnings.push('Ledger needs CheckMetadataHash; Wallet (extension) may still work');
 
-      dom.networkStatus.textContent = '';
+      if (warnings.length) {
+        setStatus(dom.networkStatus, warnings.join(' | '), 'warn');
+      } else {
+        dom.networkStatus.textContent = '';
+      }
       const token = getChainToken(state.api);
       dom.chainInfoBar.innerHTML = `Subtensor spec. ${runtime.specVersion} | Block <span class="block-num">#${blockNum.toLocaleString()}</span> | ${token}`;
       dom.connectBtn.disabled = true;

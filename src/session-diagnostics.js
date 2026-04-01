@@ -157,8 +157,8 @@ export function renderChainHealth(health, container) {
   grid.className = 'health-grid';
 
   const peerIndicator = health.peers > 0 ? 'health-ok' : 'health-err';
-  addHealthRow(grid, 'Peers', `<span class="health-indicator ${peerIndicator}"></span>${health.peers}`);
-  addHealthRow(grid, 'Syncing', health.isSyncing ? '<span class="health-indicator health-warn"></span>Yes' : '<span class="health-indicator health-ok"></span>No');
+  addHealthRow(grid, 'Peers', String(health.peers), peerIndicator);
+  addHealthRow(grid, 'Syncing', health.isSyncing ? 'Yes' : 'No', health.isSyncing ? 'health-warn' : 'health-ok');
   addHealthRow(grid, 'Node', health.version);
   addHealthRow(grid, 'Chain', health.chain);
   if (health.ss58 != null) addHealthRow(grid, 'SS58', String(health.ss58));
@@ -168,7 +168,7 @@ export function renderChainHealth(health, container) {
   container.appendChild(card);
 }
 
-function addHealthRow(parent, label, value) {
+function addHealthRow(parent, label, text, indicatorClass) {
   const row = document.createElement('div');
   row.className = 'diagnostics-row';
   const k = document.createElement('span');
@@ -176,7 +176,12 @@ function addHealthRow(parent, label, value) {
   k.textContent = label;
   const v = document.createElement('span');
   v.className = 'diagnostics-val';
-  v.innerHTML = value;
+  if (indicatorClass) {
+    const dot = document.createElement('span');
+    dot.className = `health-indicator ${indicatorClass}`;
+    v.appendChild(dot);
+  }
+  v.appendChild(document.createTextNode(text));
   row.append(k, v);
   parent.appendChild(row);
 }

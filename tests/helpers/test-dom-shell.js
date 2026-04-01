@@ -169,12 +169,17 @@ export function mountAppShell() {
     <div id="accountXRay" class="hidden" data-insight-route="accounts"></div>
     <div id="proxyManager" class="hidden" data-insight-route="accounts"></div>
     <details id="addressBookSection" data-insight-route="accounts" style="display:none"><summary>Address Book</summary><div id="addressBookContent"></div></details>
-    <div id="signMessageSection" class="hidden" data-insight-route="accounts">
-      <textarea id="signMessageInput"></textarea><button id="signMessageBtn" disabled></button><div id="signMessageResult"></div>
-    </div>
     <div id="explorerChainInfo" data-insight-route="explorer"></div>
     <div class="insight-preflight" data-insight-route="compose" style="display:none"><div id="preflightChecklist"></div></div>
-    <details class="decode-section" data-insight-route="diagnostics">
+    <div id="signMessageSection" class="hidden" data-insight-route="compose">
+      <textarea id="signMessageInput"></textarea><button id="signMessageBtn" disabled></button><div id="signMessageResult"></div>
+    </div>
+    <details class="decode-section" data-insight-route="compose">
+      <summary>Verify Signature</summary>
+      <input id="verifyAddress" /><textarea id="verifyMessage"></textarea><input id="verifySignature" />
+      <button id="verifyBtn"></button><div id="verifyResult"></div>
+    </details>
+    <details class="decode-section" data-insight-route="compose">
       <summary>Hex Decoder</summary>
       <textarea id="decodeInput"></textarea>
       <div class="custom-select" id="decodeTypeHintWrap">
@@ -185,11 +190,6 @@ export function mountAppShell() {
       </div>
       <button id="decodeBtn"></button>
       <div id="decodeResult"></div>
-    </details>
-    <details class="decode-section" data-insight-route="diagnostics">
-      <summary>Verify Signature</summary>
-      <input id="verifyAddress" /><textarea id="verifyMessage"></textarea><input id="verifySignature" />
-      <button id="verifyBtn"></button><div id="verifyResult"></div>
     </details>
   </aside>
 </div>

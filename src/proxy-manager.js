@@ -51,8 +51,6 @@ export function renderProxyList(proxies, container) {
   container.appendChild(card);
 }
 
-export function initProxyManager() {}
-
 export async function showProxiesForAccount(address) {
   if (!address || !state.api) {
     dom.proxyManager.classList.add('hidden');

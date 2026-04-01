@@ -311,10 +311,6 @@ function showMetadataInsight(palletName, category, item) {
   dom.metadataDocs.classList.remove('hidden');
 }
 
-export function initMetadataBrowser() {
-  // populated on connect via populateMetadata()
-}
-
 export function populateMetadata(api) {
   if (!api) {
     dom.metadataPane.innerHTML = '<div class="text-muted text-sm">Connect to view metadata</div>';

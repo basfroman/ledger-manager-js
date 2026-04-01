@@ -149,7 +149,7 @@ body {
 }
 
 @keyframes block-tick {
-  0%   { color: var(--text1); }
+  0%   { color: var(--text); }
   100% { color: var(--accent); }
 }
 
@@ -1373,6 +1373,16 @@ tr[data-selectable]:hover { background: var(--surface2); cursor: pointer; }
   padding-top: 8px;
   padding-bottom: 4px;
   z-index: 1;
+}
+
+[data-step]::before {
+  content: attr(data-step) ". " attr(data-step-label);
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin-bottom: 6px;
 }
 
 /* ── Ledger section: compact stacking ── */

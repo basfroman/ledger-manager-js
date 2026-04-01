@@ -1,5 +1,11 @@
-import { state } from './state.js';
 import { ACCOUNT_SOURCE } from './constants.js';
+import {
+  isApiConnected,
+  hasSelectedAccount,
+  hasPalletSelected,
+  hasMethodSelected,
+  hasPalletAndMethod,
+} from './readiness.js';
 
 /**
  * Pure data module — computes preflight checks from state, no DOM access.
@@ -13,32 +19,32 @@ export function computePreflight(st, monitor = null) {
   checks.push({
     id: 'apiConnected',
     label: 'API connected',
-    status: st.api ? 'pass' : 'fail',
-    detail: st.api ? 'Connected to RPC node' : 'Not connected',
+    status: isApiConnected(st) ? 'pass' : 'fail',
+    detail: isApiConnected(st) ? 'Connected to RPC node' : 'Not connected',
   });
 
   checks.push({
     id: 'accountSelected',
     label: 'Account selected',
-    status: st.selectedAccount ? 'pass' : 'fail',
+    status: hasSelectedAccount(st) ? 'pass' : 'fail',
     detail: st.selectedAccount ? st.selectedAccount.address : 'No account selected',
   });
 
   checks.push({
     id: 'palletSelected',
     label: 'Pallet selected',
-    status: st.palletSelectValue ? 'pass' : 'fail',
+    status: hasPalletSelected(st) ? 'pass' : 'fail',
     detail: st.palletSelectValue || 'No pallet selected',
   });
 
   checks.push({
     id: 'methodSelected',
     label: 'Method selected',
-    status: st.methodSelectValue ? 'pass' : 'fail',
+    status: hasMethodSelected(st) ? 'pass' : 'fail',
     detail: st.methodSelectValue || 'No method selected',
   });
 
-  if (st.palletSelectValue && st.methodSelectValue && st.api?.tx?.[st.palletSelectValue]?.[st.methodSelectValue]) {
+  if (hasPalletAndMethod(st) && st.api?.tx?.[st.palletSelectValue]?.[st.methodSelectValue]) {
     const fn = st.api.tx[st.palletSelectValue][st.methodSelectValue];
     const argCount = fn.meta?.args?.length ?? 0;
     checks.push({
@@ -49,7 +55,7 @@ export function computePreflight(st, monitor = null) {
     });
   }
 
-  if (st.accountSource === ACCOUNT_SOURCE.LEDGER && st.api) {
+  if (st.accountSource === ACCOUNT_SOURCE.LEDGER && isApiConnected(st)) {
     const hasMetaHash = st.api.registry?.signedExtensions?.includes?.('CheckMetadataHash') ?? false;
     checks.push({
       id: 'ledgerMetadataSupport',

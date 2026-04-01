@@ -292,15 +292,26 @@ export function renderAccounts(accounts, animate = false) {
     const pathCol = acct.accountSource === ACCOUNT_SOURCE.WALLET
       ? (acct.derivationPath || '—')
       : (acct.derivationPath || `m/44'/${SLIP44}'/${acct.accountIndex}'/0'/0'`);
-    tr.innerHTML = `
-      <td>${acct.accountIndex}</td>
-      <td title="${acct.address}">${truncAddr(acct.address)}</td>
-      <td>${pathCol}</td>
-      <td>${balStr}</td>
-      <td class="text-right">
-        <button class="copy-btn" title="Copy address" data-copy="${acct.address}">${ICON_COPY}</button>
-      </td>
-    `;
+
+    const tdIndex = document.createElement('td');
+    tdIndex.textContent = acct.accountIndex;
+    const tdAddr = document.createElement('td');
+    tdAddr.title = acct.address;
+    tdAddr.textContent = truncAddr(acct.address);
+    const tdPath = document.createElement('td');
+    tdPath.textContent = pathCol;
+    const tdBal = document.createElement('td');
+    tdBal.textContent = balStr;
+    const tdActions = document.createElement('td');
+    tdActions.className = 'text-right';
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'copy-btn';
+    copyBtn.title = 'Copy address';
+    copyBtn.dataset.copy = acct.address;
+    copyBtn.innerHTML = ICON_COPY;
+    tdActions.appendChild(copyBtn);
+    tr.append(tdIndex, tdAddr, tdPath, tdBal, tdActions);
+
     tr.addEventListener('click', () => {
       state.selectedAccount = acct;
       try { localStorage.setItem(LS_SELECTED_ACCOUNT, acct.address); } catch {}
@@ -308,7 +319,6 @@ export function renderAccounts(accounts, animate = false) {
       updateAccountsToolbar();
       onAccountsChanged();
     });
-    const copyBtn = tr.querySelector('.copy-btn');
     copyBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const ok = await copyToClipboard(copyBtn.dataset.copy);

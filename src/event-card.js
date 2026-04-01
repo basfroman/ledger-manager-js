@@ -2,7 +2,14 @@ import { copyToClipboard } from './chain-utils.js';
 
 const ICON_CHEVRON = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
 
-export function renderEventCard(ev, { onExpand } = {}) {
+/**
+ * @param {object} ev - chain event record
+ * @param {object} opts
+ * @param {function} [opts.onExpand] - called when card is expanded
+ * @param {function} [opts.formatData] - custom formatter for event data (receives toHuman() result)
+ * @param {function} [opts.buildExtra] - called with (cardBody, ev) to append extra content
+ */
+export function renderEventCard(ev, { onExpand, formatData, buildExtra } = {}) {
   const card = document.createElement('div');
   card.className = 'extrinsic-card';
 
@@ -41,10 +48,12 @@ export function renderEventCard(ev, { onExpand } = {}) {
     if (data && ((Array.isArray(data) && data.length > 0) || (typeof data === 'object' && Object.keys(data).length > 0))) {
       const argsEl = document.createElement('div');
       argsEl.className = 'extrinsic-args';
-      argsEl.textContent = typeof data === 'object' ? JSON.stringify(data, null, 2) : String(data);
+      argsEl.textContent = formatData ? formatData(data) : (typeof data === 'object' ? JSON.stringify(data, null, 2) : String(data));
       cardBody.appendChild(argsEl);
     }
   } catch {}
+
+  if (buildExtra) buildExtra(cardBody, ev);
 
   headerEl.addEventListener('click', () => {
     card.classList.toggle('expanded');

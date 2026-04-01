@@ -80,7 +80,7 @@
     <!-- Route: Compose -->
     <div id="routeCompose" class="hidden" role="tabpanel">
       <div id="builderPane">
-        <div class="row">
+        <div class="row" data-step="1" data-step-label="Select Pallet & Method">
           <div>
             <label>Pallet</label>
             <div class="custom-select" id="palletSelectWrap">
@@ -100,8 +100,8 @@
             </div>
           </div>
         </div>
-        <div class="mt-8" id="extrinsicArgs"></div>
-        <div class="row mt-8 sticky-action">
+        <div class="mt-8" id="extrinsicArgs" data-step="2" data-step-label="Arguments"></div>
+        <div class="row mt-8 sticky-action" data-step="3" data-step-label="Execute">
           <button class="btn-secondary" id="feeEstimateBtn" disabled>Estimate Fee</button>
           <button class="btn-secondary" id="dryRunBtn" disabled>Dry Run</button>
           <button class="btn-secondary" id="addToBatchBtn" disabled>+ Batch</button>
@@ -360,19 +360,29 @@
       <summary>Address Book</summary>
       <div id="addressBookContent"></div>
     </details>
-    <div id="signMessageSection" class="hidden" data-insight-route="accounts">
+    <div id="explorerChainInfo" data-insight-route="explorer"></div>
+    <div class="insight-preflight" data-insight-route="compose" style="display:none">
+      <h3 class="xray-section-title">Readiness</h3>
+      <div id="preflightChecklist"></div>
+    </div>
+    <div id="signMessageSection" class="hidden" data-insight-route="compose">
       <h3 class="xray-section-title">Sign Message</h3>
       <p class="hint text-sm">Wallet only. Ledger does not support signRaw.</p>
       <textarea id="signMessageInput" class="mt-8" placeholder="Message to sign..." rows="2"></textarea>
       <button id="signMessageBtn" class="btn-primary btn-sm mt-8" disabled>Sign</button>
       <div id="signMessageResult" class="mt-8"></div>
     </div>
-    <div id="explorerChainInfo" data-insight-route="explorer"></div>
-    <div class="insight-preflight" data-insight-route="compose" style="display:none">
-      <h3 class="xray-section-title">Readiness</h3>
-      <div id="preflightChecklist"></div>
-    </div>
-    <details class="decode-section mt-8" data-insight-route="diagnostics">
+    <details class="decode-section mt-8" data-insight-route="compose">
+      <summary>Verify Signature</summary>
+      <input id="verifyAddress" class="mt-8" placeholder="Address (5...)" />
+      <textarea id="verifyMessage" class="mt-8" placeholder="Message" rows="2"></textarea>
+      <input id="verifySignature" class="mt-8" placeholder="Signature (0x...)" />
+      <div class="row mt-8">
+        <button id="verifyBtn" class="btn-primary btn-sm">Verify</button>
+      </div>
+      <div id="verifyResult" class="mt-8"></div>
+    </details>
+    <details class="decode-section mt-8" data-insight-route="compose">
       <summary>Hex Decoder</summary>
       <textarea id="decodeInput" class="mt-8" placeholder="0x..." rows="3"></textarea>
       <div class="row mt-8">
@@ -389,16 +399,6 @@
         <button id="decodeBtn" class="btn-primary btn-sm" disabled>Decode</button>
       </div>
       <div id="decodeResult" class="mt-8"></div>
-    </details>
-    <details class="decode-section mt-8" data-insight-route="diagnostics">
-      <summary>Verify Signature</summary>
-      <input id="verifyAddress" class="mt-8" placeholder="Address (5...)" />
-      <textarea id="verifyMessage" class="mt-8" placeholder="Message" rows="2"></textarea>
-      <input id="verifySignature" class="mt-8" placeholder="Signature (0x...)" />
-      <div class="row mt-8">
-        <button id="verifyBtn" class="btn-primary btn-sm">Verify</button>
-      </div>
-      <div id="verifyResult" class="mt-8"></div>
     </details>
   </aside>
 </div>

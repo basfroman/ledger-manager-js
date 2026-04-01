@@ -18,7 +18,6 @@ export const state = {
   activeRoute: ROUTES.EXPLORER,
   preflightChecks: [],
   timelineEvents: [],
-  drafts: [],
   explorerBlocks: [],
   explorerSelectedHash: null,
   explorerLive: true,

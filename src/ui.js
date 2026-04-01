@@ -1,5 +1,6 @@
 import { ACCOUNT_SOURCE, COPY_FEEDBACK_MS, ICON_COPY, ICON_CHECK, LS_ACTIVE_ROUTE, LS_INSIGHT_WIDTH, LS_TIMELINE_HEIGHT, ROUTES, ROUTE_TO_DOM_ID } from './constants.js';
 import { copyToClipboard, truncAddr } from './chain-utils.js';
+import { isApiConnected, hasLoadedAccounts, isAccountsReady } from './readiness.js';
 import { state } from './state.js';
 
 const $ = (id) => document.getElementById(id);
@@ -169,12 +170,12 @@ function setLockedHint(el, message, actionLabel, actionFn) {
  * DataHub: locked until connected.
  */
 export function syncPanelAvailability() {
-  const connected = Boolean(state.api);
-  const hasAccounts = state.lastLoadedAccounts.length > 0;
-  const accountsReady = connected && hasAccounts;
+  const connected = isApiConnected(state);
+  const hasAccounts = hasLoadedAccounts(state);
+  const ready = isAccountsReady(state);
 
   dom.accountsSection.classList.toggle('panel-locked', !connected && !hasAccounts);
-  dom.builderPane.classList.toggle('panel-locked', !accountsReady);
+  dom.builderPane.classList.toggle('panel-locked', !ready);
   dom.routeDataHub.classList.toggle('panel-locked', !connected);
 
   dom.accountsSection.setAttribute('aria-disabled', String(!connected && !hasAccounts));

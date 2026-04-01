@@ -4,7 +4,7 @@ import { state } from './state.js';
 import { dom, setActiveRoute, updateChainBlock } from './ui.js';
 import { selectExtrinsic } from './tx.js';
 import { getContactName } from './address-book.js';
-import { appendKvRow } from './event-card.js';
+import { renderEventCard, appendKvRow } from './event-card.js';
 
 const ICON_FILTER = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
 
@@ -625,7 +625,7 @@ function renderExtrinsicCard(ext, index, allEvents) {
     body.appendChild(evLabel);
 
     for (const ev of extEvents) {
-      body.appendChild(renderEventCard(ev));
+      body.appendChild(buildExplorerEventCard(ev));
     }
   }
 
@@ -675,61 +675,19 @@ function formatArgs(obj, indent = 0) {
   return `{\n${lines.join(',\n')}\n${pad}}`;
 }
 
-function renderEventCard(ev) {
-  const card = document.createElement('div');
-  card.className = 'extrinsic-card';
-
-  const headerEl = document.createElement('div');
-  headerEl.className = 'extrinsic-card-header';
-
-  const isFail = ev.event.section === 'system' && ev.event.method === 'ExtrinsicFailed';
-  const dot = document.createElement('span');
-  dot.className = `event-dot ${isFail ? 'event-dot-fail' : 'event-dot-ok'}`;
-
-  const name = document.createElement('span');
-  name.className = 'extrinsic-method';
-  name.textContent = `${ev.event.section}.${ev.event.method}`;
-
-  const phase = document.createElement('span');
-  phase.className = 'event-phase-badge';
-  if (ev.phase.isApplyExtrinsic) {
-    phase.textContent = `ext #${ev.phase.asApplyExtrinsic.toNumber()}`;
-  } else if (ev.phase.isFinalization) {
-    phase.textContent = 'finalization';
-  } else if (ev.phase.isInitialization) {
-    phase.textContent = 'initialization';
-  }
-
-  const chevron = document.createElement('span');
-  chevron.innerHTML = ICON_CHEVRON;
-  chevron.style.transition = 'transform 0.15s';
-
-  headerEl.append(chevron, dot, name, phase);
-
-  const cardBody = document.createElement('div');
-  cardBody.className = 'extrinsic-card-body';
-
-  try {
-    const data = ev.event.data.toHuman();
-    if (data && ((Array.isArray(data) && data.length > 0) || (typeof data === 'object' && Object.keys(data).length > 0))) {
-      const argsEl = document.createElement('div');
-      argsEl.className = 'extrinsic-args';
-      argsEl.textContent = formatArgs(data);
-      cardBody.appendChild(argsEl);
-    }
-  } catch {}
-
-  try {
-    const topics = ev.topics;
-    if (topics && topics.length > 0) {
-      addKvText(cardBody, 'Topics', topics.map(t => t.toHex()).join(', '));
-    }
-  } catch {}
-
-  headerEl.addEventListener('click', () => {
-    card.classList.toggle('expanded');
-    chevron.style.transform = card.classList.contains('expanded') ? 'rotate(90deg)' : '';
-    if (card.classList.contains('expanded') && state.api) {
+function buildExplorerEventCard(ev) {
+  return renderEventCard(ev, {
+    formatData: formatArgs,
+    buildExtra(cardBody) {
+      try {
+        const topics = ev.topics;
+        if (topics && topics.length > 0) {
+          addKvText(cardBody, 'Topics', topics.map(t => t.toHex()).join(', '));
+        }
+      } catch {}
+    },
+    onExpand() {
+      if (!state.api) return;
       let docsHtml = '';
       try {
         const evMeta = state.api.events[ev.event.section]?.[ev.event.method]?.meta;
@@ -739,11 +697,8 @@ function renderEventCard(ev) {
         }
       } catch {}
       updateExplorerInsight({ type: 'event', section: ev.event.section, method: ev.event.method, docsHtml });
-    }
+    },
   });
-
-  card.append(headerEl, cardBody);
-  return card;
 }
 
 function renderSystemEventsSection(events) {
@@ -753,7 +708,7 @@ function renderSystemEventsSection(events) {
   const { section, body } = collapsibleSection(ICON_EVENTS, `System Events (${systemEvents.length})`, { collapsed: true });
 
   for (const ev of systemEvents) {
-    body.appendChild(renderEventCard(ev));
+    body.appendChild(buildExplorerEventCard(ev));
   }
 
   return section;
