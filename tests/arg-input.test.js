@@ -30,10 +30,16 @@ describe('createArgInput', () => {
     expect(el.placeholder).toBe('0');
   });
 
-  it('returns input with address placeholder for AccountId', () => {
+  it('returns wrapper with input for AccountId', () => {
     const el = createArgInput({ typeName: 'AccountId', name: 'dest', type: 0 }, mockRegistry());
-    expect(el.tagName).toBe('INPUT');
-    expect(el.placeholder).toBe('5...');
+    expect(el.tagName).toBe('DIV');
+    expect(el.classList.contains('address-autocomplete-wrap')).toBe(true);
+    const input = el.querySelector('input');
+    expect(input).toBeTruthy();
+    expect(input.placeholder).toBe('5...');
+    expect(input.dataset.argName).toBe('dest');
+    const pickBtn = el.querySelector('.address-pick-btn');
+    expect(pickBtn).toBeTruthy();
   });
 
   it('returns input with hash placeholder for H256', () => {

@@ -63,7 +63,6 @@ export function mountAppShell() {
           <button type="button" class="active" data-pane="queryPane" data-title="Queries">Queries</button>
           <button type="button" data-pane="constantsPane" data-title="Constants">Constants</button>
           <button type="button" data-pane="metadataPane" data-title="Metadata">Metadata</button>
-          <button type="button" class="hidden" id="bittensorTabBtn" data-pane="bittensorPane" data-title="Bittensor">Bittensor</button>
         </div>
       </div>
       <div id="queryPane">
@@ -76,8 +75,11 @@ export function mountAppShell() {
           <div class="custom-select-dropdown hidden" id="qStorageSelectDropdown"></div>
         </div>
         <div id="queryKeys"></div>
-        <input id="queryAtBlock" /><label><input type="checkbox" id="queryCompare" /></label>
-        <button id="queryExecuteBtn"></button>
+        <div class="row query-execute-row">
+          <input id="queryAtBlock" />
+          <label class="query-compare-label"><input type="checkbox" id="queryCompare" /> Compare</label>
+          <button id="queryExecuteBtn"></button>
+        </div>
         <div id="queryResultWrap"><div class="log-wrap"><button class="log-copy-btn" id="queryResultCopyBtn"></button><pre id="queryResult"></pre></div></div>
         <div id="watchPanel"></div>
         <div id="mapBrowserWrap" class="hidden"></div>
@@ -94,13 +96,6 @@ export function mountAppShell() {
         <div id="constantResultWrap"><div class="log-wrap"><button class="log-copy-btn" id="constantResultCopyBtn"></button><pre id="constantResult"></pre></div></div>
       </div>
       <div id="metadataPane" class="hidden"></div>
-      <div id="bittensorPane" class="hidden">
-        <div id="bittensorSubnets"></div>
-        <input id="neuronNetuid" /><input id="neuronUid" /><button id="neuronFetchBtn"></button>
-        <div id="neuronResult"></div>
-        <input id="regNetuid" /><button id="regFetchBtn"></button>
-        <div id="regResult"></div>
-      </div>
     </div>
     <div id="routeAccounts" class="hidden" role="tabpanel">
       <section id="sourceSection">
@@ -178,7 +173,6 @@ export function mountAppShell() {
       <textarea id="signMessageInput"></textarea><button id="signMessageBtn" disabled></button><div id="signMessageResult"></div>
     </div>
     <div id="explorerChainInfo" data-insight-route="explorer"></div>
-    <div class="doc-block hidden" id="bittensorDocs" data-insight-route="dataHub"></div>
     <div class="insight-preflight" data-insight-route="compose" style="display:none"><div id="preflightChecklist"></div></div>
     <details class="decode-section" data-insight-route="diagnostics">
       <summary>Hex Decoder</summary>

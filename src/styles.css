@@ -705,10 +705,13 @@ body {
 }
 .address-autocomplete-wrap {
   position: relative;
-  display: contents;
+  display: flex;
+  align-items: center;
 }
 .address-autocomplete-wrap > input {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
+  border-radius: var(--radius) 0 0 var(--radius);
 }
 .address-autocomplete-dropdown {
   position: absolute;
@@ -718,6 +721,26 @@ body {
   z-index: 20;
   max-height: 200px;
   overflow-y: auto;
+}
+.address-pick-btn {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-left: none;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: var(--surface);
+  color: var(--text2);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, border-color 0.15s;
+}
+.address-pick-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 .address-tag {
   font-size: 0.72rem;
@@ -893,7 +916,6 @@ button:disabled { opacity: 0.3; cursor: not-allowed; }
 .btn-danger:hover:not(:disabled) { background: rgba(255, 69, 58, 0.2); }
 .btn-sm { padding: 4px 10px; font-size: 0.78rem; }
 .btn-send { margin-left: 4px; }
-.netuid-input { width: 80px; }
 
 .btn-explorer {
   display: inline-flex;
@@ -950,9 +972,23 @@ button:disabled { opacity: 0.3; cursor: not-allowed; }
 /* ── Panel locking ── */
 
 .panel-locked {
-  opacity: 0.48;
   pointer-events: none;
   user-select: none;
+}
+.panel-locked > *:not(.panel-locked-hint) {
+  opacity: 0.48;
+}
+.panel-locked-hint {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text2);
+  font-size: 0.85rem;
 }
 
 /* ── Status boxes ── */
@@ -1021,6 +1057,19 @@ tr[data-selectable]:hover { background: var(--surface2); cursor: pointer; }
 }
 .copy-btn:hover { color: var(--accent); }
 .copy-btn svg { display: block; }
+.btn-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text2);
+  padding: 2px 4px;
+  opacity: 0.5;
+  transition: color 0.15s, opacity 0.15s;
+}
+.btn-remove:hover {
+  color: var(--red);
+  opacity: 1;
+}
 
 /* ── Result / log ── */
 
@@ -1708,6 +1757,14 @@ tr[data-selectable]:hover { background: var(--surface2); cursor: pointer; }
   font-size: 0.78rem;
 }
 .metadata-category-header:hover { color: var(--accent); }
+.metadata-filter {
+  width: 100%;
+  margin-bottom: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bg);
+}
 .metadata-item {
   padding: 3px 0 3px 32px;
   cursor: pointer;
@@ -1715,16 +1772,30 @@ tr[data-selectable]:hover { background: var(--surface2); cursor: pointer; }
   color: var(--text2);
 }
 .metadata-item:hover { color: var(--accent); }
+.metadata-value {
+  color: var(--accent);
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  margin: 4px 0 4px 16px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 200px;
+  overflow-y: auto;
+}
 
 /* ── Time Travel compare ── */
 
 .row > .query-at-block { max-width: 160px; flex: 0 0 auto; }
-.query-compare-row { font-size: 0.78rem; }
+.row.query-execute-row { align-items: center; }
 .query-compare-label {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   color: var(--text2);
+  white-space: nowrap;
+  flex: 0 0 auto;
   cursor: pointer;
   margin-bottom: 0;
 }

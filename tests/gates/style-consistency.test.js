@@ -101,7 +101,7 @@ describe('Gate 7 — UI Style Consistency', () => {
     const { readFileSync } = require('fs');
     const { join } = require('path');
     const SRC = join(import.meta.dirname, '../../src');
-    for (const name of ['verify-signature.js', 'sign-message.js', 'bittensor-info.js', 'accounts.js', 'settings.js']) {
+    for (const name of ['verify-signature.js', 'sign-message.js', 'accounts.js', 'settings.js']) {
       const src = readFileSync(join(SRC, name), 'utf8');
       expect(src, `${name} should not use inline style.marginLeft`).not.toMatch(/\.style\.marginLeft\s*=/);
       expect(src, `${name} should not use inline style.cssText`).not.toMatch(/\.style\.cssText\s*=/);

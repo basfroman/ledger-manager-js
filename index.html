@@ -132,7 +132,6 @@
           <button type="button" class="active" data-pane="queryPane" data-title="Queries">Queries</button>
           <button type="button" data-pane="constantsPane" data-title="Constants">Constants</button>
           <button type="button" data-pane="metadataPane" data-title="Metadata">Metadata</button>
-          <button type="button" class="hidden" id="bittensorTabBtn" data-pane="bittensorPane" data-title="Bittensor">Bittensor</button>
         </div>
       </div>
 
@@ -158,12 +157,10 @@
           </div>
         </div>
         <div class="mt-8" id="queryKeys"></div>
-        <div class="row mt-8">
+        <div class="row mt-8 query-execute-row">
           <input id="queryAtBlock" class="explorer-search-input query-at-block" placeholder="At block # (optional)" />
+          <label class="query-compare-label"><input type="checkbox" id="queryCompare" /> Compare</label>
           <button class="btn-primary" id="queryExecuteBtn" disabled>Execute Query</button>
-        </div>
-        <div class="mt-8 query-compare-row">
-          <label class="query-compare-label"><input type="checkbox" id="queryCompare" /> Compare with current</label>
         </div>
         <div class="mt-8 hidden" id="queryResultWrap">
           <label>Result</label>
@@ -208,23 +205,6 @@
 
       <div id="metadataPane" class="hidden"></div>
 
-      <div id="bittensorPane" class="hidden">
-        <h3>Subnets</h3>
-        <div id="bittensorSubnets" class="mt-8"></div>
-        <h3 class="mt-8">Neuron Lookup</h3>
-        <div class="row mt-8">
-          <input id="neuronNetuid" class="explorer-search-input netuid-input" type="number" min="0" placeholder="NetUID" />
-          <input id="neuronUid" class="explorer-search-input netuid-input" type="number" min="0" placeholder="UID" />
-          <button id="neuronFetchBtn" class="btn-primary btn-sm" disabled>Fetch</button>
-        </div>
-        <div id="neuronResult" class="mt-8"></div>
-        <h3 class="mt-8">Registration Info</h3>
-        <div class="row mt-8">
-          <input id="regNetuid" class="explorer-search-input netuid-input" type="number" min="0" placeholder="NetUID" />
-          <button id="regFetchBtn" class="btn-primary btn-sm" disabled>Fetch</button>
-        </div>
-        <div id="regResult" class="mt-8"></div>
-      </div>
     </div>
 
     <!-- Route: Accounts -->
@@ -374,7 +354,6 @@
     <div class="doc-block mt-8 hidden" id="queryDocs" data-insight-route="dataHub"></div>
     <div class="doc-block mt-8 hidden" id="constantDocs" data-insight-route="dataHub"></div>
     <div class="doc-block mt-8 hidden" id="metadataDocs" data-insight-route="dataHub"></div>
-    <div class="doc-block mt-8 hidden" id="bittensorDocs" data-insight-route="dataHub"></div>
     <div id="accountXRay" class="hidden" data-insight-route="accounts"></div>
     <div id="proxyManager" class="hidden" data-insight-route="accounts"></div>
     <details id="addressBookSection" data-insight-route="accounts" style="display:none">

@@ -136,18 +136,31 @@ export function initDomRefs() {
     signMessageBtn: $('signMessageBtn'),
     signMessageResult: $('signMessageResult'),
     explorerChainInfo: $('explorerChainInfo'),
-    bittensorTabBtn: $('bittensorTabBtn'),
-    bittensorPane: $('bittensorPane'),
-    bittensorSubnets: $('bittensorSubnets'),
-    neuronNetuid: $('neuronNetuid'),
-    neuronUid: $('neuronUid'),
-    neuronFetchBtn: $('neuronFetchBtn'),
-    neuronResult: $('neuronResult'),
-    regNetuid: $('regNetuid'),
-    regFetchBtn: $('regFetchBtn'),
-    regResult: $('regResult'),
-    bittensorDocs: $('bittensorDocs'),
   });
+}
+
+function setLockedHint(el, message, actionLabel, actionFn) {
+  let hint = el.querySelector('.panel-locked-hint');
+  if (!message) {
+    if (hint) hint.remove();
+    return;
+  }
+  if (!hint) {
+    hint = document.createElement('div');
+    hint.className = 'panel-locked-hint';
+    el.prepend(hint);
+  }
+  hint.innerHTML = '';
+  const text = document.createElement('span');
+  text.textContent = message;
+  hint.appendChild(text);
+  if (actionLabel && actionFn) {
+    const btn = document.createElement('button');
+    btn.className = 'btn-primary btn-sm';
+    btn.textContent = actionLabel;
+    btn.addEventListener('click', actionFn);
+    hint.appendChild(btn);
+  }
 }
 
 /**
@@ -165,6 +178,22 @@ export function syncPanelAvailability() {
   dom.routeDataHub.classList.toggle('panel-locked', !connected);
 
   dom.accountsSection.setAttribute('aria-disabled', String(!connected && !hasAccounts));
+
+  if (!connected) {
+    setLockedHint(dom.builderPane, 'Connect to an RPC node to execute extrinsics', 'Connect', () => dom.connectBtn.click());
+  } else if (!hasAccounts) {
+    setLockedHint(dom.builderPane, 'Load an account to sign transactions', 'Go to Accounts', () => setActiveRoute(ROUTES.ACCOUNTS));
+  } else {
+    setLockedHint(dom.builderPane, null);
+  }
+
+  setLockedHint(dom.routeDataHub,
+    !connected ? 'Connect to an RPC node to browse chain data' : null,
+    'Connect', () => dom.connectBtn.click());
+
+  setLockedHint(dom.accountsSection,
+    (!connected && !hasAccounts) ? 'Connect to a node or add a Ledger device to load accounts' : null,
+    'Connect', () => dom.connectBtn.click());
 }
 
 /**
@@ -193,7 +222,6 @@ const DATA_HUB_PANES = [
   { pane: 'queryPane', docs: 'queryDocs' },
   { pane: 'constantsPane', docs: 'constantDocs' },
   { pane: 'metadataPane', docs: 'metadataDocs' },
-  { pane: 'bittensorPane', docs: 'bittensorDocs' },
 ];
 
 /**

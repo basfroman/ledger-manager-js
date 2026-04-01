@@ -47,9 +47,6 @@ export function buildPaletteIndex(api) {
       }
     }
   }
-  if (api.query.subtensorModule) {
-    items.push({ type: 'route', kind: 'nav', label: 'Bittensor Intelligence', route: ROUTES.DATA_HUB, subTab: 'bittensorPane' });
-  }
   paletteIndex = items;
 }
 

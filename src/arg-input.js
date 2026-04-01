@@ -68,6 +68,8 @@ export function createArgInput(arg, registry, onChange = () => {}) {
 
   const input = document.createElement('input');
   input.addEventListener('input', onChange);
+  input.dataset.argName = arg.name.toString();
+  input.dataset.argType = tn;
 
   if (/^(u8|u16|u32|u64|u128|compact)/i.test(typeName)) {
     input.type = 'text';
@@ -75,15 +77,13 @@ export function createArgInput(arg, registry, onChange = () => {}) {
     input.inputMode = 'numeric';
   } else if (/accountid|multiaddress|address/i.test(typeName)) {
     input.placeholder = '5...';
-    attachAddressAutocomplete(input);
+    return attachAddressAutocomplete(input);
   } else if (/h256|hash/i.test(typeName)) {
     input.placeholder = '0x...';
   } else {
     input.placeholder = `${tn} (string or JSON)`;
   }
 
-  input.dataset.argName = arg.name.toString();
-  input.dataset.argType = tn;
   return input;
 }
 
@@ -126,6 +126,16 @@ function attachAddressAutocomplete(input) {
     dd.classList.toggle('hidden', count === 0);
   }
 
+  const pickBtn = document.createElement('button');
+  pickBtn.type = 'button';
+  pickBtn.className = 'address-pick-btn';
+  pickBtn.title = 'Choose from address book';
+  pickBtn.innerHTML = '+';
+  pickBtn.addEventListener('click', () => {
+    rebuild('');
+    dd.classList.toggle('hidden');
+  });
+
   input.addEventListener('focus', () => rebuild(input.value));
   input.addEventListener('input', () => rebuild(input.value));
   input.addEventListener('blur', () => { setTimeout(() => dd.classList.add('hidden'), 150); });
@@ -138,9 +148,8 @@ function attachAddressAutocomplete(input) {
     dd.classList.add('hidden');
   });
 
-  input.parentNode?.insertBefore(wrap, input);
-  wrap.appendChild(input);
-  wrap.appendChild(dd);
+  wrap.append(input, pickBtn, dd);
+  return wrap;
 }
 
 export function collectInputValues(container) {

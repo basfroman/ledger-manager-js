@@ -95,8 +95,8 @@ describe('Gate 1 — Architecture Hygiene', () => {
     expect(file.content).not.toMatch(/from\s+['"]\.\/state/);
   });
 
-  it('feature pack modules (verify-signature, sign-message, bittensor-info) each export functions', () => {
-    const featureModules = ['verify-signature.js', 'sign-message.js', 'bittensor-info.js'];
+  it('feature pack modules (verify-signature, sign-message) each export functions', () => {
+    const featureModules = ['verify-signature.js', 'sign-message.js'];
     for (const name of featureModules) {
       const file = files.find(f => f.name === name);
       expect(file, `${name} should exist`).toBeTruthy();

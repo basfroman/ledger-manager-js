@@ -15,6 +15,7 @@ import {
   EXTENSION_DISPLAY_LABELS,
   ICON_COPY,
   ICON_CHECK,
+  ICON_REMOVE,
   LS_ACCOUNT_SOURCE,
   LS_SELECTED_ACCOUNT,
   RAO_PER_TAO,
@@ -316,6 +317,15 @@ export function renderAccounts(accounts, animate = false) {
         setTimeout(() => { copyBtn.innerHTML = ICON_COPY; }, COPY_FEEDBACK_MS);
       }
     });
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'btn-remove';
+    removeBtn.title = 'Remove from list';
+    removeBtn.innerHTML = ICON_REMOVE;
+    removeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeAccount(acct.address);
+    });
+    tr.querySelector('.text-right').appendChild(removeBtn);
     if (state.api) {
       const sendBtn = document.createElement('button');
       sendBtn.className = 'btn-secondary btn-sm btn-send';
@@ -329,6 +339,18 @@ export function renderAccounts(accounts, animate = false) {
     }
     dom.accountsBody.appendChild(tr);
   }
+}
+
+function removeAccount(address) {
+  state.lastLoadedAccounts = state.lastLoadedAccounts.filter(a => a.address !== address);
+  state.accountsLoaded = state.lastLoadedAccounts.length > 0;
+  if (state.selectedAccount?.address === address) {
+    state.selectedAccount = null;
+    try { localStorage.removeItem(LS_SELECTED_ACCOUNT); } catch {}
+  }
+  renderAccounts(state.lastLoadedAccounts);
+  updateAccountsToolbar();
+  onAccountsChanged();
 }
 
 export async function fetchBalances(accounts) {

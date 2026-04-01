@@ -20,7 +20,6 @@ import { initProxyManager, showProxiesForAccount } from './proxy-manager.js';
 import { fetchAccountProfile, renderAccountXRay } from './account-xray.js';
 import { initVerify } from './verify-signature.js';
 import { initSignMessage, updateSignVisibility } from './sign-message.js';
-import { initBittensorInfo, populateBittensorInfo, resetBittensorInfo } from './bittensor-info.js';
 import { initSettings } from './settings.js';
 
 window.taoForge = Object.freeze({
@@ -65,7 +64,6 @@ initMetadataBrowser();
 initProxyManager();
 initVerify();
 initSignMessage();
-initBittensorInfo();
 initSettings();
 
 initAccounts({
@@ -114,7 +112,6 @@ initNetwork({
     renderDiagnosticsDOM(collectDiagnostics(state), dom.diagnosticsCard);
     activateExplorer();
     startHealthPolling(state.api, dom.chainHealth, (h) => { state.chainHealth = h; });
-    populateBittensorInfo();
     if (!state.accountsLoaded && state.activeRoute === ROUTES.COMPOSE) {
       setActiveRoute(ROUTES.ACCOUNTS);
     }
@@ -136,7 +133,6 @@ initNetwork({
     dom.chainHealth.innerHTML = '';
     dom.nonceInfo.innerHTML = '';
     dom.accountXRay.classList.add('hidden');
-    resetBittensorInfo();
   },
 });
 
