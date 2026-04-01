@@ -298,21 +298,11 @@
         <input id="explorerSearchInput" class="explorer-search-input" placeholder="Block # or hash..." />
         <button id="explorerSearchBtn" class="btn-primary btn-sm" disabled>Go</button>
         <button id="explorerLiveBtn" class="btn-secondary btn-sm" disabled>Live</button>
-        <div class="seg-control seg-control-sm" id="explorerViewToggle">
-          <button type="button" class="active" data-view="blocks">Blocks</button>
-          <button type="button" data-view="events">Events</button>
-        </div>
       </div>
       <div class="explorer-split">
         <div class="explorer-list-pane">
           <div class="explorer-block-list" id="explorerBlockList">
             <div class="explorer-placeholder">Connect to a node to explore blocks</div>
-          </div>
-          <div id="eventStreamPane" class="hidden">
-            <div class="event-stream-toolbar">
-              <input id="eventStreamFilter" class="explorer-search-input" placeholder="Filter events..." />
-            </div>
-            <div id="eventStreamList" class="event-stream-list"></div>
           </div>
         </div>
         <div class="explorer-detail-pane" id="explorerDetailPane">

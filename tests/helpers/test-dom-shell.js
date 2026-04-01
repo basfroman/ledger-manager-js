@@ -137,18 +137,10 @@ export function mountAppShell() {
         <input id="explorerSearchInput" />
         <button id="explorerSearchBtn"></button>
         <button id="explorerLiveBtn"></button>
-        <div class="seg-control seg-control-sm" id="explorerViewToggle">
-          <button type="button" class="active" data-view="blocks">Blocks</button>
-          <button type="button" data-view="events">Events</button>
-        </div>
       </div>
       <div class="explorer-split">
         <div class="explorer-list-pane">
           <div id="explorerBlockList"></div>
-          <div id="eventStreamPane" class="hidden">
-            <input id="eventStreamFilter" />
-            <div id="eventStreamList"></div>
-          </div>
         </div>
         <div id="explorerDetailPane"></div>
       </div>

@@ -61,7 +61,7 @@ describe('Gate 8 — Hardcode Control', () => {
 
   it('new feature constants are defined only in constants.js', () => {
     const files = getSrcFiles(['constants.js']);
-    const names = ['MORTAL_ERA_PERIOD', 'MAX_WATCHES', 'MAX_BATCH_CALLS', 'MAX_ADDRESS_BOOK', 'HEALTH_POLL_MS', 'MAX_EVENT_STREAM'];
+    const names = ['MORTAL_ERA_PERIOD', 'MAX_WATCHES', 'MAX_BATCH_CALLS', 'MAX_ADDRESS_BOOK', 'HEALTH_POLL_MS'];
     for (const file of files) {
       for (const name of names) {
         expect(file.content, `${file.name} should not redefine ${name}`).not.toMatch(new RegExp(`${name}\\s*=\\s*\\d`));

@@ -67,8 +67,6 @@ export const MAX_WATCHES = 10;
 export const MAX_BATCH_CALLS = 20;
 export const MAX_ADDRESS_BOOK = 100;
 export const HEALTH_POLL_MS = 10_000;
-export const MAX_EVENT_STREAM = 500;
-
 export const LS_LAST_ENDPOINT = 'tao-forge-last-endpoint';
 export const LS_ACCOUNT_SOURCE = 'tao-forge-account-source';
 export const LS_ACTIVE_ROUTE = 'tao-forge-active-route';
